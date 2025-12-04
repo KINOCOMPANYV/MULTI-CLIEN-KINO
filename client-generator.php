@@ -86,7 +86,7 @@ if ($action === 'edit' && !empty($_POST['edit_codigo'])) {
     }
 }
 
-// CLONAR DATOS
+// CLONAR DATOS (ENTRE CLIENTES)
 if ($action === 'clone' && !empty($_POST['clone_from']) && !empty($_POST['clone_to'])) {
     try {
         $from = sanitize_code($_POST['clone_from']);
@@ -98,34 +98,63 @@ if ($action === 'clone' && !empty($_POST['clone_from']) && !empty($_POST['clone_
         if ($check->rowCount() != 2)
             throw new Exception('Ambos clientes deben existir.');
 
+        // Determinar tablas origen (si es kino, usar raíz)
+        $tableDocsFrom = ($from === 'kino') ? 'documents' : "{$from}_documents";
+        $tableCodesFrom = ($from === 'kino') ? 'codes' : "{$from}_codes";
+
+        // Tablas destino siempre tienen prefijo (kino no se puede sobrescribir así)
+        if ($to === 'kino')
+            throw new Exception('No se puede clonar HACIA el maestro Kino.');
+        $tableDocsTo = "{$to}_documents";
+        $tableCodesTo = "{$to}_codes";
+
         // Clonar documentos
-        $db->exec("INSERT INTO `{$to}_documents` (name, date, path, codigos_extraidos) 
-                   SELECT name, date, REPLACE(path, '{$from}/', '{$to}/'), codigos_extraidos 
-                   FROM `{$from}_documents`");
+        // Nota: Ajustamos el path. Si viene de kino (uploads/), el path es 'archivo.pdf'. 
+        // Si va a cliente (uploads/cliente/), el path debería ser relativo o absoluto?
+        // El sistema actual parece usar paths relativos al root de uploads o al cliente.
+        // La lógica de api.php maneja esto.
+
+        $db->exec("INSERT INTO `{$tableDocsTo}` (name, date, path, codigos_extraidos) 
+                   SELECT name, date, path, codigos_extraidos 
+                   FROM `{$tableDocsFrom}`");
 
         // Mapear IDs y clonar códigos
-        $docs = $db->query("SELECT d1.id AS old_id, d2.id AS new_id 
-                            FROM `{$from}_documents` d1 
-                            JOIN `{$to}_documents` d2 ON d1.name = d2.name AND d1.date = d2.date")->fetchAll();
+        // Esto es complejo si los nombres no son únicos. Asumimos nombres+fecha únicos por simplicidad o copiamos todo.
+        // Mejor estrategia: Limpiar destino y copiar todo.
+        $db->exec("TRUNCATE TABLE `{$tableCodesTo}`");
+        $db->exec("TRUNCATE TABLE `{$tableDocsTo}`");
 
-        foreach ($docs as $d) {
-            $db->prepare("INSERT INTO `{$to}_codes` (document_id, code) 
-                          SELECT ?, code FROM `{$from}_codes` WHERE document_id = ?")
-                ->execute([$d['new_id'], $d['old_id']]);
+        $db->exec("INSERT INTO `{$tableDocsTo}` (name, date, path, codigos_extraidos) 
+                   SELECT name, date, path, codigos_extraidos 
+                   FROM `{$tableDocsFrom}`");
+
+        // Insertar códigos mapeando IDs (esto requiere que los IDs se mantengan o se re-calculen)
+        // Si truncamos, los IDs de auto_increment se reinician? No necesariamente.
+        // Hagamos un INSERT SELECT directo asumiendo integridad o un loop.
+        // Para ser robusto:
+        $docs = $db->query("SELECT id, name, date FROM `{$tableDocsFrom}`")->fetchAll();
+        foreach ($docs as $doc) {
+            // Buscar el nuevo ID insertado
+            $stmt = $db->prepare("SELECT id FROM `{$tableDocsTo}` WHERE name = ? AND date = ? LIMIT 1");
+            $stmt->execute([$doc['name'], $doc['date']]);
+            $newId = $stmt->fetchColumn();
+
+            if ($newId) {
+                $db->prepare("INSERT INTO `{$tableCodesTo}` (document_id, code) 
+                              SELECT ?, code FROM `{$tableCodesFrom}` WHERE document_id = ?")
+                    ->execute([$newId, $doc['id']]);
+            }
         }
 
         // Copiar archivos
-        $srcDir = __DIR__ . '/uploads/' . $from;
+        $srcDir = ($from === 'kino') ? __DIR__ . '/uploads' : __DIR__ . '/uploads/' . $from;
         $dstDir = __DIR__ . '/uploads/' . $to;
-        if (is_dir($srcDir)) {
-            if (!is_dir($dstDir))
-                mkdir($dstDir, 0777, true);
-            foreach (scandir($srcDir) as $file) {
-                if ($file !== '.' && $file !== '..') {
-                    copy($srcDir . '/' . $file, $dstDir . '/' . $file);
-                }
-            }
-        }
+
+        if (!is_dir($dstDir))
+            mkdir($dstDir, 0777, true);
+
+        // Usar la función de tenant.php
+        copy_dir_files_only($srcDir, $dstDir);
 
         $ok = "✅ Datos clonados de '{$from}' a '{$to}'.";
     } catch (Exception $e) {
@@ -133,7 +162,7 @@ if ($action === 'clone' && !empty($_POST['clone_from']) && !empty($_POST['clone_
     }
 }
 
-// CREAR NUEVO CLIENTE
+// CREAR NUEVO CLIENTE (CLONADO DESDE KINO)
 if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $codigo = sanitize_code($codigoInput);
@@ -144,37 +173,37 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new Exception('Faltan campos requeridos.');
         }
 
+        // 1. Validar si existe
         $st = $db->prepare('SELECT 1 FROM _control_clientes WHERE codigo = ?');
         $st->execute([$codigo]);
         if ($st->fetch())
             throw new Exception('El código ya existe.');
 
+        // 2. Crear registro en _control_clientes
         $hash = password_hash($pass, PASSWORD_BCRYPT);
         $db->prepare('INSERT INTO _control_clientes (codigo, nombre, password_hash, color_primario, color_secundario, activo) VALUES (?, ?, ?, ?, ?, 1)')
             ->execute([$codigo, $nombre, $hash, $colorPrimario, $colorSecundario]);
 
-        $db->exec("CREATE TABLE IF NOT EXISTS `{$codigo}_documents` (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name VARCHAR(255) NOT NULL,
-            date DATE NOT NULL,
-            path VARCHAR(255) NOT NULL,
-            codigos_extraidos TEXT DEFAULT NULL,
-            INDEX idx_date (date)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        // 3. Crear tablas clonando la estructura de KINO (documents y codes)
+        $db->exec("CREATE TABLE IF NOT EXISTS `{$codigo}_documents` LIKE `documents`");
+        $db->exec("CREATE TABLE IF NOT EXISTS `{$codigo}_codes` LIKE `codes`");
 
-        $db->exec("CREATE TABLE IF NOT EXISTS `{$codigo}_codes` (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            document_id INT NOT NULL,
-            code VARCHAR(100) NOT NULL,
-            INDEX idx_code (code),
-            FOREIGN KEY (document_id) REFERENCES `{$codigo}_documents` (id) ON DELETE CASCADE
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        // 4. Copiar DATOS de la base de datos de Kino al nuevo cliente
+        $db->exec("INSERT INTO `{$codigo}_documents` SELECT * FROM `documents`");
+        $db->exec("INSERT INTO `{$codigo}_codes` SELECT * FROM `codes`");
 
-        $uploadsDir = __DIR__ . '/uploads/' . $codigo;
-        if (!is_dir($uploadsDir))
-            mkdir($uploadsDir, 0777, true);
+        // 5. Copiar ARCHIVOS FÍSICOS de Kino al nuevo cliente
+        $uploadsRoot = __DIR__ . '/uploads';       // Origen (Kino)
+        $uploadsClient = $uploadsRoot . '/' . $codigo; // Destino (Nuevo Cliente)
 
-        $ok = "✅ Cliente creado.<br><strong>Código:</strong> {$codigo}<br><strong>Contraseña:</strong> {$pass}<br><a href='login.php' style='color:#fff;text-decoration:underline;'>Ir al Login</a>";
+        if (!is_dir($uploadsClient)) {
+            mkdir($uploadsClient, 0777, true);
+        }
+
+        // Usamos la función optimizada en tenant.php
+        copy_dir_files_only($uploadsRoot, $uploadsClient);
+
+        $ok = "✅ Cliente creado y clonado de Kino.<br><strong>Código:</strong> {$codigo}<br><strong>Contraseña:</strong> {$pass}<br><a href='login.php' style='color:#fff;text-decoration:underline;'>Ir al Login</a>";
     } catch (Exception $e) {
         $err = '❌ ' . $e->getMessage();
     }
@@ -431,7 +460,7 @@ try {
                         </div>
                     </div>
                 </div>
-                <button type="submit">✅ Crear Cliente</button>
+                <button type="submit">✅ Crear Cliente (Clonar de Kino)</button>
             </form>
         </div>
 

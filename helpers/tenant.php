@@ -1,4 +1,6 @@
 <?php
+// helpers/tenant.php
+
 function sanitize_code(?string $code): string
 {
     $code = strtolower($code ?? '');
@@ -14,46 +16,41 @@ function ensure_active_client(PDO $db, string $code): bool
 
 function table_docs(string $code): string
 {
+    // CORRECCIÓN: Si es kino, usar la tabla raíz. Si no, usar prefijo.
+    if ($code === 'kino') {
+        return 'documents';
+    }
     return "{$code}_documents";
 }
 
 function table_codes(string $code): string
 {
+    // CORRECCIÓN: Si es kino, usar la tabla raíz.
+    if ($code === 'kino') {
+        return 'codes';
+    }
     return "{$code}_codes";
 }
 
-function copy_dir(string $src, string $dst): bool
+// Función robusta para copiar archivos sin copiar subcarpetas (otros clientes)
+function copy_dir_files_only(string $src, string $dst): bool
 {
-    if (!is_dir($src)) {
+    if (!is_dir($src))
         return false;
-    }
-    if (!is_dir($dst) && !mkdir($dst, 0777, true) && !is_dir($dst)) {
+    if (!is_dir($dst) && !mkdir($dst, 0777, true))
         return false;
-    }
 
     $dir = opendir($src);
-    if (!$dir) {
-        return false;
-    }
-
     while (false !== ($file = readdir($dir))) {
-        if ($file === '.' || $file === '..') {
+        if ($file === '.' || $file === '..')
             continue;
-        }
-        $from = $src . '/' . $file;
-        $to = $dst . '/' . $file;
-        if (is_dir($from)) {
-            copy_dir($from, $to);
-        } else {
-            $parent = dirname($to);
-            if (!is_dir($parent) && !mkdir($parent, 0777, true) && !is_dir($parent)) {
-                closedir($dir);
-                return false;
-            }
-            copy($from, $to);
+
+        // CORRECCIÓN: Solo copiamos archivos (PDFs/Imágenes), NO carpetas
+        // Esto evita que copies la carpeta de 'cliente1' dentro de 'cliente2'
+        if (is_file($src . '/' . $file)) {
+            copy($src . '/' . $file, $dst . '/' . $file);
         }
     }
-
     closedir($dir);
     return true;
 }

@@ -46,7 +46,13 @@ $tabla_codes_sql = "`{$tabla_codes}`";
 
 function ensure_upload_dir($cliente)
 {
-    $dir = __DIR__ . '/uploads/' . $cliente;
+    // CORRECCIÓN: Kino usa la raíz de uploads
+    if ($cliente === 'kino') {
+        $dir = __DIR__ . '/uploads';
+    } else {
+        $dir = __DIR__ . '/uploads/' . $cliente;
+    }
+
     if (!is_dir($dir)) {
         if (!mkdir($dir, 0777, true) && !is_dir($dir)) {
             throw new RuntimeException('No se pudo crear la carpeta de uploads');
@@ -58,12 +64,20 @@ function ensure_upload_dir($cliente)
 function resolve_upload_path($cliente, $relativePath)
 {
     $relativePath = ltrim($relativePath, '/');
+
+    // Si es Kino, buscar directamente en uploads/
+    if ($cliente === 'kino') {
+        return [__DIR__ . '/uploads/' . $relativePath, $relativePath];
+    }
+
+    // Para otros clientes, lógica normal
     if (strpos($relativePath, '/') === false) {
         $candidate = $cliente . '/' . $relativePath;
         $full = __DIR__ . '/uploads/' . $candidate;
         if (is_file($full)) {
             return [$full, $candidate];
         }
+        // Fallback por compatibilidad
         $fullLegacy = __DIR__ . '/uploads/' . $relativePath;
         return [$fullLegacy, $relativePath];
     }
