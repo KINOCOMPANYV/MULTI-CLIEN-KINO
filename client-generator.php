@@ -1,78 +1,159 @@
 <?php
-// Habilitar reporte de errores para debugging
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-
-// Iniciar sesión
 session_start();
 
-error_log('✅ [GENERATOR] client-generator.php iniciado');
-echo '<!-- GEN INIT -->' . PHP_EOL;
-
-// Verificar que los archivos necesarios existan
 $configFile = __DIR__ . '/config.php';
 $helperFile = __DIR__ . '/helpers/tenant.php';
 
-if (!file_exists($configFile)) {
-    die('❌ Error: No se encuentra config.php en ' . $configFile);
-}
+if (!file_exists($configFile))
+    die('❌ Error: No se encuentra config.php');
+if (!file_exists($helperFile))
+    die('❌ Error: No se encuentra helpers/tenant.php');
 
-if (!file_exists($helperFile)) {
-    die('❌ Error: No se encuentra helpers/tenant.php en ' . $helperFile);
-}
+require $configFile;
+require $helperFile;
 
-// Cargar archivos requeridos
-try {
-    require $configFile;
-    require $helperFile;
-    echo '<!-- Config y helpers cargados correctamente -->' . PHP_EOL;
-} catch (Exception $e) {
-    die('❌ Error al cargar archivos: ' . $e->getMessage());
-}
-
-// Verificar que la conexión a la base de datos existe
-if (!isset($db) || !($db instanceof PDO)) {
+if (!isset($db) || !($db instanceof PDO))
     die('❌ Error: No hay conexión a la base de datos');
-}
 
-// Variables de estado
 $err = $ok = null;
 $codigoInput = $_POST['codigo'] ?? '';
 $nombreInput = $_POST['nombre'] ?? '';
-$codigoCreado = '';
+$colorPrimario = $_POST['color_primario'] ?? '#2563eb';
+$colorSecundario = $_POST['color_secundario'] ?? '#F87171';
 
-// Procesar el formulario
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Procesar acciones
+$action = $_POST['action'] ?? $_GET['action'] ?? '';
+
+// ELIMINAR CLIENTE
+if ($action === 'delete' && !empty($_POST['delete_codigo'])) {
+    try {
+        $codigo = sanitize_code($_POST['delete_codigo']);
+
+        // Eliminar tablas del cliente
+        $db->exec("DROP TABLE IF EXISTS `{$codigo}_codes`");
+        $db->exec("DROP TABLE IF EXISTS `{$codigo}_documents`");
+
+        // Eliminar archivos de uploads
+        $uploadsDir = __DIR__ . '/uploads/' . $codigo;
+        if (is_dir($uploadsDir)) {
+            $files = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($uploadsDir, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::CHILD_FIRST
+            );
+            foreach ($files as $file) {
+                $file->isDir() ? rmdir($file->getRealPath()) : unlink($file->getRealPath());
+            }
+            rmdir($uploadsDir);
+        }
+
+        // Eliminar registro del cliente
+        $db->prepare('DELETE FROM _control_clientes WHERE codigo = ?')->execute([$codigo]);
+
+        $ok = "✅ Cliente '{$codigo}' eliminado completamente.";
+    } catch (Exception $e) {
+        $err = '❌ ' . $e->getMessage();
+    }
+}
+
+// EDITAR CLIENTE
+if ($action === 'edit' && !empty($_POST['edit_codigo'])) {
+    try {
+        $codigo = sanitize_code($_POST['edit_codigo']);
+        $nombre = trim($_POST['edit_nombre'] ?? '');
+        $pass = trim($_POST['edit_password'] ?? '');
+        $colorP = $_POST['edit_color_primario'] ?? '#2563eb';
+        $colorS = $_POST['edit_color_secundario'] ?? '#F87171';
+
+        if ($nombre) {
+            $sql = 'UPDATE _control_clientes SET nombre = ?, color_primario = ?, color_secundario = ?';
+            $params = [$nombre, $colorP, $colorS];
+
+            if ($pass) {
+                $sql .= ', password_hash = ?';
+                $params[] = password_hash($pass, PASSWORD_BCRYPT);
+            }
+            $sql .= ' WHERE codigo = ?';
+            $params[] = $codigo;
+
+            $db->prepare($sql)->execute($params);
+            $ok = "✅ Cliente '{$codigo}' actualizado.";
+        }
+    } catch (Exception $e) {
+        $err = '❌ ' . $e->getMessage();
+    }
+}
+
+// CLONAR DATOS
+if ($action === 'clone' && !empty($_POST['clone_from']) && !empty($_POST['clone_to'])) {
+    try {
+        $from = sanitize_code($_POST['clone_from']);
+        $to = sanitize_code($_POST['clone_to']);
+
+        // Verificar que ambos clientes existen
+        $check = $db->prepare('SELECT codigo FROM _control_clientes WHERE codigo IN (?, ?)');
+        $check->execute([$from, $to]);
+        if ($check->rowCount() != 2)
+            throw new Exception('Ambos clientes deben existir.');
+
+        // Clonar documentos
+        $db->exec("INSERT INTO `{$to}_documents` (name, date, path, codigos_extraidos) 
+                   SELECT name, date, REPLACE(path, '{$from}/', '{$to}/'), codigos_extraidos 
+                   FROM `{$from}_documents`");
+
+        // Mapear IDs y clonar códigos
+        $docs = $db->query("SELECT d1.id AS old_id, d2.id AS new_id 
+                            FROM `{$from}_documents` d1 
+                            JOIN `{$to}_documents` d2 ON d1.name = d2.name AND d1.date = d2.date")->fetchAll();
+
+        foreach ($docs as $d) {
+            $db->prepare("INSERT INTO `{$to}_codes` (document_id, code) 
+                          SELECT ?, code FROM `{$from}_codes` WHERE document_id = ?")
+                ->execute([$d['new_id'], $d['old_id']]);
+        }
+
+        // Copiar archivos
+        $srcDir = __DIR__ . '/uploads/' . $from;
+        $dstDir = __DIR__ . '/uploads/' . $to;
+        if (is_dir($srcDir)) {
+            if (!is_dir($dstDir))
+                mkdir($dstDir, 0777, true);
+            foreach (scandir($srcDir) as $file) {
+                if ($file !== '.' && $file !== '..') {
+                    copy($srcDir . '/' . $file, $dstDir . '/' . $file);
+                }
+            }
+        }
+
+        $ok = "✅ Datos clonados de '{$from}' a '{$to}'.";
+    } catch (Exception $e) {
+        $err = '❌ ' . $e->getMessage();
+    }
+}
+
+// CREAR NUEVO CLIENTE
+if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $codigo = sanitize_code($codigoInput);
         $nombre = trim($nombreInput);
         $pass = trim($_POST['password'] ?? '');
-        $importar = isset($_POST['importar']);
 
         if ($codigo === '' || $nombre === '' || $pass === '') {
             throw new Exception('Faltan campos requeridos.');
         }
 
-        // Verificar que el código no existe
         $st = $db->prepare('SELECT 1 FROM _control_clientes WHERE codigo = ?');
         $st->execute([$codigo]);
-        if ($st->fetch()) {
+        if ($st->fetch())
             throw new Exception('El código ya existe.');
-        }
 
-        // Crear el cliente
         $hash = password_hash($pass, PASSWORD_BCRYPT);
-        $db->prepare('INSERT INTO _control_clientes (codigo, nombre, password_hash, activo) VALUES (?, ?, ?, 1)')
-           ->execute([$codigo, $nombre, $hash]);
+        $db->prepare('INSERT INTO _control_clientes (codigo, nombre, password_hash, color_primario, color_secundario, activo) VALUES (?, ?, ?, ?, ?, 1)')
+            ->execute([$codigo, $nombre, $hash, $colorPrimario, $colorSecundario]);
 
-        // Crear tablas del cliente
-        $docs = table_docs($codigo);
-        $codes = table_codes($codigo);
-        $docsSql = "`{$docs}`";
-        $codesSql = "`{$codes}`";
-
-        $db->exec("CREATE TABLE IF NOT EXISTS {$docsSql} (
+        $db->exec("CREATE TABLE IF NOT EXISTS `{$codigo}_documents` (
             id INT AUTO_INCREMENT PRIMARY KEY,
             name VARCHAR(255) NOT NULL,
             date DATE NOT NULL,
@@ -81,322 +162,316 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             INDEX idx_date (date)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-        $db->exec("CREATE TABLE IF NOT EXISTS {$codesSql} (
+        $db->exec("CREATE TABLE IF NOT EXISTS `{$codigo}_codes` (
             id INT AUTO_INCREMENT PRIMARY KEY,
             document_id INT NOT NULL,
             code VARCHAR(100) NOT NULL,
             INDEX idx_code (code),
-            FOREIGN KEY (document_id) REFERENCES {$docsSql} (id) ON DELETE CASCADE
+            FOREIGN KEY (document_id) REFERENCES `{$codigo}_documents` (id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 
-        // Crear carpeta de uploads
         $uploadsDir = __DIR__ . '/uploads/' . $codigo;
-        if (!is_dir($uploadsDir)) {
-            if (!mkdir($uploadsDir, 0777, true) && !is_dir($uploadsDir)) {
-                throw new Exception('No se pudo crear la carpeta de uploads.');
-            }
-        }
+        if (!is_dir($uploadsDir))
+            mkdir($uploadsDir, 0777, true);
 
-        // Crear carpeta del cliente
-        $clientesDir = __DIR__ . '/clientes';
-        if (!is_dir($clientesDir)) {
-            if (!mkdir($clientesDir, 0777, true) && !is_dir($clientesDir)) {
-                throw new Exception('No se pudo crear la carpeta clientes.');
-            }
-        }
-
-        $templateDir = __DIR__ . '/htdocs';
-        $destDir = $clientesDir . '/' . $codigo;
-
-        if (is_dir($destDir)) {
-            throw new Exception('La carpeta del cliente ya existe.');
-        }
-
-        // Copiar plantilla
-        if (is_dir($templateDir)) {
-            if (!copy_dir($templateDir, $destDir)) {
-                throw new Exception('No se pudo copiar la plantilla de htdocs.');
-            }
-        } else {
-            if (!mkdir($destDir, 0777, true) && !is_dir($destDir)) {
-                throw new Exception('No se pudo crear la carpeta del cliente.');
-            }
-        }
-
-        // Crear archivo tenant.json
-        file_put_contents($destDir . '/tenant.json', json_encode([
-            'codigo' => $codigo,
-            'nombre' => $nombre,
-        ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-
-        // Importar datos si se solicitó
-        if ($importar) {
-            $hasDocs = $db->query("SHOW TABLES LIKE 'documents'")->fetchColumn();
-            $hasCodes = $db->query("SHOW TABLES LIKE 'codes'")->fetchColumn();
-
-            if ($hasDocs) {
-                $db->exec("INSERT INTO {$docsSql} (id, name, date, path, codigos_extraidos)
-                    SELECT id, name, date, path, codigos_extraidos FROM `documents`");
-            }
-            if ($hasCodes) {
-                $db->exec("INSERT INTO {$codesSql} (id, document_id, code)
-                    SELECT id, document_id, code FROM `codes`");
-            }
-
-            if ($hasDocs) {
-                $nextId = (int) $db->query("SELECT IFNULL(MAX(id), 0) + 1 FROM {$docsSql}")->fetchColumn();
-                $db->exec("ALTER TABLE {$docsSql} AUTO_INCREMENT = {$nextId}");
-            }
-            if ($hasCodes) {
-                $nextCodeId = (int) $db->query("SELECT IFNULL(MAX(id), 0) + 1 FROM {$codesSql}")->fetchColumn();
-                $db->exec("ALTER TABLE {$codesSql} AUTO_INCREMENT = {$nextCodeId}");
-            }
-        }
-
-        $ok = "✅ Cliente creado exitosamente.<br><strong>Código:</strong> " . htmlspecialchars($codigo) . "<br><strong>Contraseña:</strong> " . htmlspecialchars($pass) . "<br><strong>URL:</strong> <a href='login.php' style='color:#fff;text-decoration:underline;'>Ir al Login</a>";
-        $codigoCreado = $codigo;
-        error_log('✅ [GENERATOR] Cliente creado: ' . $codigo);
-        
+        $ok = "✅ Cliente creado.<br><strong>Código:</strong> {$codigo}<br><strong>Contraseña:</strong> {$pass}<br><a href='login.php' style='color:#fff;text-decoration:underline;'>Ir al Login</a>";
     } catch (Exception $e) {
-        error_log('❌ [GENERATOR] Error: ' . $e->getMessage());
-        echo '<!-- GEN ERROR: ' . htmlspecialchars($e->getMessage()) . ' -->' . PHP_EOL;
         $err = '❌ ' . $e->getMessage();
     }
 }
 
-// Fetch existing clients
-$existingClients = [];
+// Obtener lista de clientes
+$clients = [];
 try {
-    $stmt = $db->query("SELECT codigo, nombre, activo FROM _control_clientes ORDER BY id DESC");
-    $existingClients = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $clients = $db->query("SELECT codigo, nombre, color_primario, color_secundario, activo, fecha_creacion FROM _control_clientes ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
-    error_log("Error fetching clients: " . $e->getMessage());
 }
 ?>
 <!doctype html>
 <html lang="es">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Crear cliente</title>
+    <title>Gestión de Clientes</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", Arial, sans-serif;
+            font-family: system-ui, sans-serif;
             background: linear-gradient(135deg, #0b1220 0%, #1a2332 100%);
             color: #e8eefc;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
             min-height: 100vh;
             padding: 20px;
         }
+
         .container {
-            width: 100%;
-            max-width: 800px;
-            margin-bottom: 2rem;
+            max-width: 900px;
+            margin: 0 auto;
         }
+
         .card {
             background: #111a2b;
-            padding: 32px;
-            border-radius: 16px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            margin-bottom: 20px;
         }
+
         h2 {
-            margin-bottom: 24px;
-            color: #e8eefc;
-            font-size: 1.75rem;
             text-align: center;
+            margin-bottom: 20px;
         }
+
         label {
             display: block;
-            margin-top: 16px;
-            margin-bottom: 6px;
+            margin-top: 12px;
             color: #9fb3ce;
             font-weight: 500;
         }
-        input[type=text],
-        input[type=password] {
+
+        input,
+        select {
             width: 100%;
-            padding: 12px 14px;
+            padding: 10px;
+            margin-top: 4px;
             border: 1px solid #2a3550;
-            border-radius: 10px;
+            border-radius: 8px;
             background: #0e1626;
             color: #e8eefc;
             font-size: 1rem;
-            transition: border-color 0.2s;
         }
-        input[type=text]:focus,
-        input[type=password]:focus {
-            outline: none;
-            border-color: #2a6df6;
+
+        input[type="color"] {
+            height: 40px;
+            padding: 2px;
+            cursor: pointer;
         }
+
         button {
-            margin-top: 24px;
+            margin-top: 16px;
             width: 100%;
-            padding: 14px;
+            padding: 12px;
             border: 0;
-            border-radius: 12px;
+            border-radius: 8px;
             background: #2a6df6;
             color: #fff;
             font-weight: 700;
-            font-size: 1.05rem;
             cursor: pointer;
-            transition: filter 0.2s;
+            transition: 0.2s;
         }
+
         button:hover {
             filter: brightness(1.15);
         }
-        .row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            align-items: end;
+
+        .btn-danger {
+            background: #dc2626;
         }
+
+        .btn-warning {
+            background: #d97706;
+        }
+
+        .btn-success {
+            background: #16a34a;
+        }
+
         .ok {
             background: #0f5132;
             color: #d1f3e0;
-            padding: 14px 18px;
-            border-radius: 10px;
+            padding: 12px;
+            border-radius: 8px;
             margin-bottom: 16px;
-            line-height: 1.5;
         }
+
         .err {
             background: #5c1a1a;
             color: #ffe3e3;
-            padding: 14px 18px;
-            border-radius: 10px;
+            padding: 12px;
+            border-radius: 8px;
             margin-bottom: 16px;
-            line-height: 1.5;
         }
-        .chk {
-            display: flex;
-            align-items: center;
-            gap: 10px;
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
             margin-top: 16px;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #2a3550;
+        }
+
+        th {
             color: #9fb3ce;
         }
-        .chk input {
-            width: auto;
-            margin: 0;
-            cursor: pointer;
-        }
-        .chk label {
-            margin: 0;
-            cursor: pointer;
-        }
-        p.note {
-            margin-top: 16px;
-            color: #9fb3ce;
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-        code {
-            color: #c8d9ff;
-            background: #0e1626;
-            padding: 2px 6px;
+
+        .color-dot {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
             border-radius: 4px;
+            vertical-align: middle;
+            border: 1px solid #fff;
         }
-        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #2a3550; }
-        th { color: #9fb3ce; font-weight: 600; }
-        td { color: #e8eefc; }
-        a.link { color: #2a6df6; text-decoration: none; font-weight: bold; }
-        a.link:hover { text-decoration: underline; }
-        @media (max-width: 640px) {
-            .card { padding: 24px; }
-            .row { grid-template-columns: 1fr; }
-            .container { max-width: 100%; }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .actions button {
+            width: auto;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+            margin: 0;
+        }
+
+        a.link {
+            color: #2a6df6;
+            text-decoration: none;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .row {
+                grid-template-columns: 1fr;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #111a2b;
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        .modal h3 {
+            margin-bottom: 16px;
+        }
+
+        .close-btn {
+            background: #374151;
+            margin-top: 8px;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
+        <!-- Crear Cliente -->
         <div class="card">
+            <h2>🏢 Crear Nuevo Cliente</h2>
+            <?php if ($ok): ?>
+                <div class="ok"><?= $ok ?></div><?php endif; ?>
+            <?php if ($err): ?>
+                <div class="err"><?= htmlspecialchars($err) ?></div><?php endif; ?>
             <form method="post">
-                <h2>🏢 Crear nuevo cliente</h2>
-                
-                <?php if ($ok): ?>
-                    <div class="ok"><?php echo $ok; ?></div>
-                <?php endif; ?>
-                
-                <?php if ($err): ?>
-                    <div class="err"><?php echo htmlspecialchars($err, ENT_QUOTES, 'UTF-8'); ?></div>
-                <?php endif; ?>
-                
-                <label for="codigo">Código del cliente <small>(minúsculas, números y _)</small></label>
-                <input 
-                    id="codigo" 
-                    name="codigo" 
-                    type="text"
-                    required 
-                    pattern="[a-z0-9_]+"
-                    placeholder="cliente1" 
-                    value="<?php echo htmlspecialchars($codigoInput, ENT_QUOTES, 'UTF-8'); ?>"
-                >
-                
-                <label for="nombre">Nombre del cliente</label>
-                <input 
-                    id="nombre" 
-                    name="nombre" 
-                    type="text"
-                    required 
-                    placeholder="Ferretería XYZ" 
-                    value="<?php echo htmlspecialchars($nombreInput, ENT_QUOTES, 'UTF-8'); ?>"
-                >
-                
+                <input type="hidden" name="action" value="create">
                 <div class="row">
                     <div>
-                        <label for="password">Contraseña</label>
-                        <input id="password" name="password" type="password" required minlength="4">
+                        <label>Código (minúsculas)</label>
+                        <input name="codigo" pattern="[a-z0-9_]+" required placeholder="cliente1">
                     </div>
-                    <div class="chk">
-                        <input 
-                            type="checkbox" 
-                            name="importar" 
-                            id="im" 
-                            <?php echo isset($_POST['importar']) ? 'checked' : ''; ?>
-                        >
-                        <label for="im">Importar datos globales</label>
+                    <div>
+                        <label>Nombre</label>
+                        <input name="nombre" required placeholder="Empresa XYZ">
                     </div>
                 </div>
-                
-                <button type="submit">✅ Crear cliente</button>
-                
-                <p class="note">
-                    Se crearán las tablas y carpeta de uploads para el cliente.
-                </p>
+                <div class="row">
+                    <div>
+                        <label>Contraseña</label>
+                        <input name="password" type="password" required minlength="4">
+                    </div>
+                    <div class="row">
+                        <div>
+                            <label>Color Primario</label>
+                            <input name="color_primario" type="color" value="#2563eb">
+                        </div>
+                        <div>
+                            <label>Color Secundario</label>
+                            <input name="color_secundario" type="color" value="#F87171">
+                        </div>
+                    </div>
+                </div>
+                <button type="submit">✅ Crear Cliente</button>
             </form>
         </div>
-    </div>
 
-    <div class="container">
+        <!-- Lista de Clientes -->
         <div class="card">
-            <h2>📋 Clientes Creados</h2>
-            <?php if (empty($existingClients)): ?>
-                <p style="text-align: center; color: #9fb3ce;">No hay clientes registrados.</p>
+            <h2>📋 Clientes Registrados</h2>
+            <?php if (empty($clients)): ?>
+                <p style="text-align:center;color:#9fb3ce;">No hay clientes.</p>
             <?php else: ?>
-                <div style="overflow-x: auto;">
+                <div style="overflow-x:auto;">
                     <table>
                         <thead>
                             <tr>
                                 <th>Nombre</th>
                                 <th>Código</th>
-                                <th>Acceso</th>
-                                <th>Contraseña</th>
+                                <th>Colores</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <?php foreach ($existingClients as $client): ?>
+                            <?php foreach ($clients as $c): ?>
                                 <tr>
-                                    <td><?php echo htmlspecialchars($client['nombre']); ?></td>
-                                    <td><code><?php echo htmlspecialchars($client['codigo']); ?></code></td>
+                                    <td><?= htmlspecialchars($c['nombre']) ?></td>
+                                    <td><code><?= htmlspecialchars($c['codigo']) ?></code></td>
                                     <td>
-                                        <a href="login.php" target="_blank" class="link">
-                                            🔗 Abrir App
-                                        </a>
+                                        <span class="color-dot"
+                                            style="background:<?= $c['color_primario'] ?? '#2563eb' ?>"></span>
+                                        <span class="color-dot"
+                                            style="background:<?= $c['color_secundario'] ?? '#F87171' ?>"></span>
                                     </td>
-                                    <td style="color: #9fb3ce;">******** <small>(Oculta)</small></td>
+                                    <td class="actions">
+                                        <a href="index.html?c=<?= urlencode($c['codigo']) ?>" target="_blank"><button
+                                                type="button" class="btn-success">🔗 App</button></a>
+                                        <button type="button"
+                                            onclick="openEdit('<?= $c['codigo'] ?>', '<?= htmlspecialchars($c['nombre']) ?>', '<?= $c['color_primario'] ?? '#2563eb' ?>', '<?= $c['color_secundario'] ?? '#F87171' ?>')"
+                                            class="btn-warning">✏️ Editar</button>
+                                        <button type="button" onclick="openDelete('<?= $c['codigo'] ?>')" class="btn-danger">🗑️
+                                            Eliminar</button>
+                                        <button type="button" onclick="openClone('<?= $c['codigo'] ?>')">📋 Clonar</button>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -405,5 +480,86 @@ try {
             <?php endif; ?>
         </div>
     </div>
+
+    <!-- Modal Editar -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <h3>✏️ Editar Cliente</h3>
+            <form method="post">
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="edit_codigo" id="edit_codigo">
+                <label>Nombre</label>
+                <input name="edit_nombre" id="edit_nombre" required>
+                <label>Nueva Contraseña (dejar vacío para no cambiar)</label>
+                <input name="edit_password" type="password">
+                <div class="row">
+                    <div><label>Color Primario</label><input name="edit_color_primario" id="edit_color_p" type="color">
+                    </div>
+                    <div><label>Color Secundario</label><input name="edit_color_secundario" id="edit_color_s"
+                            type="color"></div>
+                </div>
+                <button type="submit">💾 Guardar</button>
+                <button type="button" class="close-btn" onclick="closeModal('editModal')">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Eliminar -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <h3>🗑️ Eliminar Cliente</h3>
+            <p>¿Seguro que deseas eliminar este cliente? Se borrarán TODOS sus datos y archivos.</p>
+            <form method="post">
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="delete_codigo" id="delete_codigo">
+                <button type="submit" class="btn-danger">Sí, Eliminar</button>
+                <button type="button" class="close-btn" onclick="closeModal('deleteModal')">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Clonar -->
+    <div id="cloneModal" class="modal">
+        <div class="modal-content">
+            <h3>📋 Clonar Datos</h3>
+            <form method="post">
+                <input type="hidden" name="action" value="clone">
+                <label>Desde (origen)</label>
+                <input name="clone_from" id="clone_from" readonly>
+                <label>Hacia (destino)</label>
+                <select name="clone_to" id="clone_to" required>
+                    <option value="">Seleccionar cliente...</option>
+                    <?php foreach ($clients as $c): ?>
+                        <option value="<?= $c['codigo'] ?>"><?= htmlspecialchars($c['nombre']) ?> (<?= $c['codigo'] ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <button type="submit">📋 Clonar Datos</button>
+                <button type="button" class="close-btn" onclick="closeModal('cloneModal')">Cancelar</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openEdit(codigo, nombre, colorP, colorS) {
+            document.getElementById('edit_codigo').value = codigo;
+            document.getElementById('edit_nombre').value = nombre;
+            document.getElementById('edit_color_p').value = colorP;
+            document.getElementById('edit_color_s').value = colorS;
+            document.getElementById('editModal').classList.add('active');
+        }
+        function openDelete(codigo) {
+            document.getElementById('delete_codigo').value = codigo;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+        function openClone(codigo) {
+            document.getElementById('clone_from').value = codigo;
+            document.getElementById('cloneModal').classList.add('active');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+    </script>
 </body>
+
 </html>

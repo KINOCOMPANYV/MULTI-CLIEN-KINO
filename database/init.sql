@@ -4,6 +4,8 @@ CREATE TABLE IF NOT EXISTS _control_clientes (
   nombre VARCHAR(100) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   email VARCHAR(120) DEFAULT NULL,
+  color_primario VARCHAR(7) DEFAULT '#2563eb',
+  color_secundario VARCHAR(7) DEFAULT '#F87171',
   activo BOOLEAN DEFAULT 1,
   fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
   ultimo_acceso DATETIME NULL

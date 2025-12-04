@@ -5,9 +5,9 @@ require __DIR__ . '/helpers/tenant.php';
 session_start();
 header('Content-Type: application/json');
 error_log('✅ [API] api.php iniciado');
-echo '<!-- API INIT -->';
 
-function json_exit($payload) {
+function json_exit($payload)
+{
     echo json_encode($payload);
     exit;
 }
@@ -44,7 +44,8 @@ $tabla_codes = table_codes($cliente);
 $tabla_docs_sql = "`{$tabla_docs}`";
 $tabla_codes_sql = "`{$tabla_codes}`";
 
-function ensure_upload_dir($cliente) {
+function ensure_upload_dir($cliente)
+{
     $dir = __DIR__ . '/uploads/' . $cliente;
     if (!is_dir($dir)) {
         if (!mkdir($dir, 0777, true) && !is_dir($dir)) {
@@ -54,7 +55,8 @@ function ensure_upload_dir($cliente) {
     return $dir;
 }
 
-function resolve_upload_path($cliente, $relativePath) {
+function resolve_upload_path($cliente, $relativePath)
+{
     $relativePath = ltrim($relativePath, '/');
     if (strpos($relativePath, '/') === false) {
         $candidate = $cliente . '/' . $relativePath;
@@ -72,6 +74,12 @@ $action = $_REQUEST['action'] ?? '';
 
 try {
     switch ($action) {
+        case 'get_client_config':
+            $stmt = $db->prepare("SELECT color_primario, color_secundario FROM _control_clientes WHERE codigo = ?");
+            $stmt->execute([$cliente]);
+            $config = $stmt->fetch(PDO::FETCH_ASSOC);
+            json_exit($config ?: ['color_primario' => '#2563eb', 'color_secundario' => '#F87171']);
+
         case 'suggest':
             $term = trim($_GET['term'] ?? '');
             if ($term === '') {
@@ -82,8 +90,8 @@ try {
             json_exit($stmt->fetchAll(PDO::FETCH_COLUMN));
 
         case 'upload':
-            $name  = $_POST['name'] ?? '';
-            $date  = $_POST['date'] ?? '';
+            $name = $_POST['name'] ?? '';
+            $date = $_POST['date'] ?? '';
             $codes = array_filter(array_map('trim', preg_split('/\r?\n/', $_POST['codes'] ?? '')));
             if (empty($_FILES['file']['tmp_name'])) {
                 json_exit(['error' => 'Archivo no recibido']);
@@ -109,9 +117,9 @@ try {
             json_exit(['message' => 'Documento guardado']);
 
         case 'list':
-            $page    = max(1, (int)($_GET['page'] ?? 1));
-            $perPage = isset($_GET['per_page']) ? (int)$_GET['per_page'] : 50;
-            $total   = (int)$db->query("SELECT COUNT(*) FROM {$tabla_docs_sql}")->fetchColumn();
+            $page = max(1, (int) ($_GET['page'] ?? 1));
+            $perPage = isset($_GET['per_page']) ? (int) $_GET['per_page'] : 50;
+            $total = (int) $db->query("SELECT COUNT(*) FROM {$tabla_docs_sql}")->fetchColumn();
 
             if ($perPage === 0) {
                 $stmt = $db->query("SELECT d.id,d.name,d.date,d.path, GROUP_CONCAT(c.code SEPARATOR '\n') AS codes FROM {$tabla_docs_sql} d LEFT JOIN {$tabla_codes_sql} c ON d.id=c.document_id GROUP BY d.id ORDER BY d.date DESC");
@@ -120,8 +128,8 @@ try {
                 $page = 1;
             } else {
                 $perPage = max(1, min(50, $perPage));
-                $offset  = ($page - 1) * $perPage;
-                $lastPage = (int)ceil($total / $perPage);
+                $offset = ($page - 1) * $perPage;
+                $lastPage = (int) ceil($total / $perPage);
 
                 $stmt = $db->prepare("SELECT d.id,d.name,d.date,d.path, GROUP_CONCAT(c.code SEPARATOR '\n') AS codes FROM {$tabla_docs_sql} d LEFT JOIN {$tabla_codes_sql} c ON d.id=c.document_id GROUP BY d.id ORDER BY d.date DESC LIMIT :l OFFSET :o");
                 $stmt->bindValue(':l', $perPage, PDO::PARAM_INT);
@@ -132,20 +140,20 @@ try {
 
             $docs = array_map(function ($r) {
                 return [
-                    'id'    => (int)$r['id'],
-                    'name'  => $r['name'],
-                    'date'  => $r['date'],
-                    'path'  => $r['path'],
+                    'id' => (int) $r['id'],
+                    'name' => $r['name'],
+                    'date' => $r['date'],
+                    'path' => $r['path'],
                     'codes' => $r['codes'] ? explode("\n", $r['codes']) : [],
                 ];
             }, $rows);
 
             json_exit([
-                'total'     => $total,
-                'page'      => $page,
-                'per_page'  => $perPage,
+                'total' => $total,
+                'page' => $page,
+                'per_page' => $perPage,
                 'last_page' => $lastPage,
-                'data'      => $docs,
+                'data' => $docs,
             ]);
 
         case 'search':
@@ -160,13 +168,13 @@ try {
 
             $docs = [];
             foreach ($rows as $r) {
-                $id = (int)$r['id'];
+                $id = (int) $r['id'];
                 if (!isset($docs[$id])) {
                     $docs[$id] = [
-                        'id'    => $id,
-                        'name'  => $r['name'],
-                        'date'  => $r['date'],
-                        'path'  => $r['path'],
+                        'id' => $id,
+                        'name' => $r['name'],
+                        'date' => $r['date'],
+                        'path' => $r['path'],
                         'codes' => [],
                     ];
                 }
@@ -176,7 +184,7 @@ try {
             }
 
             $remaining = $codes;
-            $selected  = [];
+            $selected = [];
             while ($remaining) {
                 $best = null;
                 $bestCover = [];
@@ -228,7 +236,7 @@ try {
             exit;
 
         case 'edit':
-            $id   = (int)($_POST['id'] ?? 0);
+            $id = (int) ($_POST['id'] ?? 0);
             $name = $_POST['name'] ?? '';
             $date = $_POST['date'] ?? '';
             $codes = array_filter(array_map('trim', preg_split('/\r?\n/', $_POST['codes'] ?? '')));
@@ -266,7 +274,7 @@ try {
             json_exit(['message' => 'Documento actualizado']);
 
         case 'delete':
-            $id = (int)($_GET['id'] ?? $_POST['id'] ?? 0);
+            $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
             if (!$id) {
                 json_exit(['error' => 'ID inválido']);
             }
@@ -294,10 +302,10 @@ try {
 
             $docs = array_map(function ($r) {
                 return [
-                    'id'    => (int)$r['id'],
-                    'name'  => $r['name'],
-                    'date'  => $r['date'],
-                    'path'  => $r['path'],
+                    'id' => (int) $r['id'],
+                    'name' => $r['name'],
+                    'date' => $r['date'],
+                    'path' => $r['path'],
                     'codes' => $r['codes'] ? explode("\n", $r['codes']) : [],
                 ];
             }, $rows);
