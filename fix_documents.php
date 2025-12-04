@@ -1,24 +1,25 @@
 <?php
 // fix_documents.php
-// ESTE SCRIPT FUERZA LA IMPORTACIÓN DE LA TABLA 'documents' (Nombres de PDF y Fechas)
+// ESTE SCRIPT REPARA ESPECÍFICAMENTE LA TABLA DE DOCUMENTOS (Nombres y Fechas)
 
 require_once __DIR__ . '/config.php';
 
-// Configuración para evitar tiempos de espera
+// Configuración para evitar tiempos de espera y errores de memoria
 ini_set('memory_limit', '1024M');
 set_time_limit(0);
 
-echo "<h1>📄 Reparación de Tabla de Documentos</h1><pre>";
+echo "<h1>📄 Reparación de Tabla 'documents'</h1><pre>";
 
 try {
-    // 1. CREAR LA TABLA DOCUMENTS MANUALMENTE
+    // 1. RECREAR LA ESTRUCTURA DE LA TABLA
     // -----------------------------------------------------
-    // Esto asegura que la tabla exista con las columnas correctas
-    // Coincide con la estructura vista en tu archivo SQL: (id, name, date, path, codigos_extraidos)
+    echo "1. Verificando estructura de tabla 'documents'...\n";
 
-    echo "1. Recreando estructura de la tabla 'documents'...\n";
+    // Borramos la tabla para asegurarnos de que se cree limpia y con la estructura correcta
+    $db->exec("DROP TABLE IF EXISTS `documents`");
 
-    $sqlCreate = "CREATE TABLE IF NOT EXISTS `documents` (
+    // Estructura basada en tu sistema (id, name, date, path, codigos_extraidos)
+    $sqlCreate = "CREATE TABLE `documents` (
       `id` int(11) NOT NULL AUTO_INCREMENT,
       `name` varchar(255) NOT NULL,
       `date` date NOT NULL,
@@ -29,9 +30,9 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
     $db->exec($sqlCreate);
-    echo "✅ Tabla 'documents' lista.\n";
+    echo "✅ Tabla 'documents' creada correctamente.\n";
 
-    // 2. EXTRAER LOS DATOS DEL SQL
+    // 2. EXTRAER E INSERTAR DATOS DEL SQL
     // -----------------------------------------------------
     $sqlFile = __DIR__ . '/if0_39064130_buscador (10).sql';
 
@@ -39,47 +40,41 @@ try {
         throw new Exception("❌ No encuentro el archivo: $sqlFile");
     }
 
-    echo "2. Buscando datos de documentos en el archivo SQL...\n";
+    echo "2. Buscando datos en el archivo SQL...\n";
 
-    // Leemos el archivo línea por línea para no saturar la memoria
     $handle = fopen($sqlFile, "r");
-    $found = false;
     $count = 0;
 
     if ($handle) {
-        // Vaciamos la tabla para evitar duplicados antes de insertar
-        $db->exec("TRUNCATE TABLE `documents`");
-
         while (($line = fgets($handle)) !== false) {
             $line = trim($line);
 
-            // Buscamos líneas que empiecen con INSERT INTO `documents` o INSERT INTO documents
+            // Buscamos específicamente las líneas que insertan en 'documents'
+            // Tu archivo usa comillas invertidas `documents`
             if (stripos($line, 'INSERT INTO `documents`') === 0 || stripos($line, 'INSERT INTO documents') === 0) {
                 try {
-                    // Ejecutar la inserción
                     $db->exec($line);
-                    $found = true;
                     $count++;
-                    echo "   -> Bloque de datos insertado correctamente.\n";
+                    echo "   -> Bloque de datos insertado.\n";
                 } catch (PDOException $e) {
-                    echo "⚠️ Error insertando bloque: " . substr($e->getMessage(), 0, 100) . "...\n";
+                    echo "⚠️ Error en un bloque (puede ser ignorado si son duplicados): " . substr($e->getMessage(), 0, 100) . "...\n";
                 }
             }
         }
         fclose($handle);
     }
 
-    // 3. RESULTADO FINAL
+    // 3. VERIFICACIÓN FINAL
     // -----------------------------------------------------
     $totalDocs = $db->query("SELECT COUNT(*) FROM documents")->fetchColumn();
 
-    echo "\n📊 TOTAL DE DOCUMENTOS EN BASE DE DATOS: $totalDocs\n";
+    echo "\n📊 RESULTADO FINAL:\n";
+    echo "   Total de documentos recuperados: " . number_format($totalDocs) . "\n";
 
     if ($totalDocs > 0) {
-        echo "🚀 ¡SOLUCIONADO! Los nombres y fechas ya deberían aparecer en el sistema.";
+        echo "\n🚀 ¡SOLUCIONADO! Ahora Kino debería ver los nombres y fechas de los PDFs.";
     } else {
-        echo "❌ ERROR: No se encontraron instrucciones 'INSERT INTO documents' en el archivo SQL.\n";
-        echo "   Por favor verifica que el archivo SQL tenga datos.";
+        echo "\n❌ ERROR: Siguen sin aparecer. Verifica que el archivo SQL tenga instrucciones 'INSERT INTO `documents`'.";
     }
 
 } catch (Exception $e) {
