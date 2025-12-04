@@ -153,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        $ok = "✅ Cliente creado exitosamente. URL: /clientes/{$codigo}/index.html | API con c: ?c={$codigo}";
+        $ok = "✅ Cliente creado exitosamente.<br><strong>Código:</strong> " . htmlspecialchars($codigo) . "<br><strong>Contraseña:</strong> " . htmlspecialchars($pass) . "<br><strong>URL:</strong> <a href='login.php' style='color:#fff;text-decoration:underline;'>Ir al Login</a>";
         $codigoCreado = $codigo;
         error_log('✅ [GENERATOR] Cliente creado: ' . $codigo);
         
@@ -161,7 +161,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         error_log('❌ [GENERATOR] Error: ' . $e->getMessage());
         echo '<!-- GEN ERROR: ' . htmlspecialchars($e->getMessage()) . ' -->' . PHP_EOL;
         $err = '❌ ' . $e->getMessage();
+        }
     }
+}
+
+// Fetch existing clients
+$existingClients = [];
+try {
+    $stmt = $db->query("SELECT codigo, nombre, activo FROM _control_clientes ORDER BY id DESC");
+    $existingClients = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    error_log("Error fetching clients: " . $e->getMessage());
 }
 ?>
 <!doctype html>
@@ -176,16 +186,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, "Helvetica Neue", Arial, sans-serif;
             background: linear-gradient(135deg, #0b1220 0%, #1a2332 100%);
             color: #e8eefc;
-            display: grid;
-            place-items: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             min-height: 100vh;
             padding: 20px;
         }
         .container {
             width: 100%;
-            max-width: 600px;
+            max-width: 800px;
+            margin-bottom: 2rem;
         }
-        form {
+        .card {
             background: #111a2b;
             padding: 32px;
             border-radius: 16px;
@@ -286,70 +298,113 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding: 2px 6px;
             border-radius: 4px;
         }
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #2a3550; }
+        th { color: #9fb3ce; font-weight: 600; }
+        td { color: #e8eefc; }
+        a.link { color: #2a6df6; text-decoration: none; font-weight: bold; }
+        a.link:hover { text-decoration: underline; }
         @media (max-width: 640px) {
-            form { padding: 24px; }
+            .card { padding: 24px; }
             .row { grid-template-columns: 1fr; }
+            .container { max-width: 100%; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <form method="post">
-            <h2>🏢 Crear nuevo cliente</h2>
-            
-            <?php if ($ok): ?>
-                <div class="ok"><?php echo htmlspecialchars($ok, ENT_QUOTES, 'UTF-8'); ?></div>
-            <?php endif; ?>
-            
-            <?php if ($err): ?>
-                <div class="err"><?php echo htmlspecialchars($err, ENT_QUOTES, 'UTF-8'); ?></div>
-            <?php endif; ?>
-            
-            <label for="codigo">Código del cliente <small>(minúsculas, números y _)</small></label>
-            <input 
-                id="codigo" 
-                name="codigo" 
-                type="text"
-                required 
-                pattern="[a-z0-9_]+"
-                placeholder="cliente1" 
-                value="<?php echo htmlspecialchars($codigoInput, ENT_QUOTES, 'UTF-8'); ?>"
-            >
-            
-            <label for="nombre">Nombre del cliente</label>
-            <input 
-                id="nombre" 
-                name="nombre" 
-                type="text"
-                required 
-                placeholder="Ferretería XYZ" 
-                value="<?php echo htmlspecialchars($nombreInput, ENT_QUOTES, 'UTF-8'); ?>"
-            >
-            
-            <div class="row">
-                <div>
-                    <label for="password">Contraseña</label>
-                    <input id="password" name="password" type="password" required minlength="4">
+        <div class="card">
+            <form method="post">
+                <h2>🏢 Crear nuevo cliente</h2>
+                
+                <?php if ($ok): ?>
+                    <div class="ok"><?php echo $ok; ?></div>
+                <?php endif; ?>
+                
+                <?php if ($err): ?>
+                    <div class="err"><?php echo htmlspecialchars($err, ENT_QUOTES, 'UTF-8'); ?></div>
+                <?php endif; ?>
+                
+                <label for="codigo">Código del cliente <small>(minúsculas, números y _)</small></label>
+                <input 
+                    id="codigo" 
+                    name="codigo" 
+                    type="text"
+                    required 
+                    pattern="[a-z0-9_]+"
+                    placeholder="cliente1" 
+                    value="<?php echo htmlspecialchars($codigoInput, ENT_QUOTES, 'UTF-8'); ?>"
+                >
+                
+                <label for="nombre">Nombre del cliente</label>
+                <input 
+                    id="nombre" 
+                    name="nombre" 
+                    type="text"
+                    required 
+                    placeholder="Ferretería XYZ" 
+                    value="<?php echo htmlspecialchars($nombreInput, ENT_QUOTES, 'UTF-8'); ?>"
+                >
+                
+                <div class="row">
+                    <div>
+                        <label for="password">Contraseña</label>
+                        <input id="password" name="password" type="password" required minlength="4">
+                    </div>
+                    <div class="chk">
+                        <input 
+                            type="checkbox" 
+                            name="importar" 
+                            id="im" 
+                            <?php echo isset($_POST['importar']) ? 'checked' : ''; ?>
+                        >
+                        <label for="im">Importar datos globales</label>
+                    </div>
                 </div>
-                <div class="chk">
-                    <input 
-                        type="checkbox" 
-                        name="importar" 
-                        id="im" 
-                        <?php echo isset($_POST['importar']) ? 'checked' : ''; ?>
-                    >
-                    <label for="im">Importar datos de tablas globales</label>
+                
+                <button type="submit">✅ Crear cliente</button>
+                
+                <p class="note">
+                    Se crearán las tablas y carpeta de uploads para el cliente.
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>📋 Clientes Creados</h2>
+            <?php if (empty($existingClients)): ?>
+                <p style="text-align: center; color: #9fb3ce;">No hay clientes registrados.</p>
+            <?php else: ?>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Código</th>
+                                <th>Acceso</th>
+                                <th>Contraseña</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($existingClients as $client): ?>
+                                <tr>
+                                    <td><?php echo htmlspecialchars($client['nombre']); ?></td>
+                                    <td><code><?php echo htmlspecialchars($client['codigo']); ?></code></td>
+                                    <td>
+                                        <a href="login.php" target="_blank" class="link">
+                                            🔗 Abrir App
+                                        </a>
+                                    </td>
+                                    <td style="color: #9fb3ce;">******** <small>(Oculta)</small></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </div>
-            </div>
-            
-            <button type="submit">✅ Crear cliente</button>
-            
-            <p class="note">
-                Se crearán las tablas necesarias con prefijo, la carpeta 
-                <code>uploads/<?php echo htmlspecialchars($codigoCreado ?: sanitize_code($codigoInput), ENT_QUOTES, 'UTF-8'); ?></code> 
-                y se clonará la plantilla de <code>htdocs/</code>.
-            </p>
-        </form>
+            <?php endif; ?>
+        </div>
     </div>
 </body>
 </html>
