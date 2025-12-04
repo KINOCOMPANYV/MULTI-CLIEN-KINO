@@ -1,5 +1,8 @@
 # Guía de Despliegue en Railway
 
+> [!IMPORTANT]
+> Este proyecto incluye un `Dockerfile` que instala automáticamente las extensiones PDO MySQL necesarias. Railway lo detectará y usará automáticamente.
+
 ## 1. Configuración de Variables de Entorno
 En tu proyecto de Railway, ve a la pestaña **Variables** y agrega las siguientes (Railway suele agregar las de MySQL automáticamente si añades el plugin de MySQL, pero verifica que los nombres coincidan o usa los nombres que Railway provee):
 
