@@ -161,7 +161,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         error_log('❌ [GENERATOR] Error: ' . $e->getMessage());
         echo '<!-- GEN ERROR: ' . htmlspecialchars($e->getMessage()) . ' -->' . PHP_EOL;
         $err = '❌ ' . $e->getMessage();
-        }
     }
 }
 
