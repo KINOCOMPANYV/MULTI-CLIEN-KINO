@@ -39,17 +39,19 @@ Tu aplicación está intentando conectarse a `sq1209.infinityfree.com` (servidor
 
 > **IMPORTANTE:** Si ves variables `DB_HOST`, `DB_NAME`, etc. con valores del servidor externo (`sq1209.infinityfree.com`), **ELIMÍNALAS**. Solo deben existir las variables `MYSQL*`.
 
-### 3. Configurar el Start Command
+### 3. Configurar el Start Command (Opcional)
+
+El Dockerfile ya incluye el comando correcto, pero si necesitas cambiarlo manualmente:
 
 1. En el servicio **MULTI-CLIEN-KINO**, ve a **Settings** > **Deploy**
-2. En **Start Command**, configura:
+2. En **Start Command**, puedes dejar vacío (usará el CMD del Dockerfile) o configurar:
    ```bash
-   php migrate.php && php-fpm
+   php migrate.php && php -S 0.0.0.0:3000
    ```
    
-   Esto ejecutará la migración automáticamente antes de iniciar PHP-FPM.
+   Esto ejecutará la migración y luego iniciará el servidor PHP en el puerto 3000 (que Railway espera).
 
-> **Nota:** Si usas el Dockerfile incluido en el proyecto, el comando por defecto es `apache2-foreground`. Si ves el error "apache2-foreground: command not found", cambia el Start Command a `php-fpm` como se indica arriba.
+> **Nota:** Railway espera que la aplicación escuche en el puerto 3000. El Dockerfile ya está configurado para esto.
 
 ### 4. Redesplegar
 
@@ -73,7 +75,11 @@ Una vez desplegado, verifica los logs:
 
 ### Error: "apache2-foreground: command not found"
 - **Causa:** Start Command incorrecto
-- **Solución:** Usa el comando del Paso 3
+- **Solución:** El Dockerfile ahora usa el servidor PHP integrado
+
+### Error: "502 Bad Gateway"
+- **Causa:** La aplicación no escucha en el puerto 3000 que Railway espera
+- **Solución:** El Dockerfile actualizado usa `php -S 0.0.0.0:3000` que escucha en el puerto correcto
 
 ### Error: "No address associated with hostname"
 - **Causa:** Variables de entorno apuntando al servidor externo
