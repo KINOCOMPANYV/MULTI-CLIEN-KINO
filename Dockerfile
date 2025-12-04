@@ -13,4 +13,5 @@ WORKDIR /var/www/html
 EXPOSE 3000
 
 # Comando de inicio: ejecutar migración y luego servidor PHP
-CMD php migrate.php && php -S 0.0.0.0:3000
+# Usa la variable $PORT de Railway (por defecto 3000 si no está definida)
+CMD php migrate.php && php -d display_errors=1 -S 0.0.0.0:${PORT:-3000}
