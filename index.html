@@ -412,6 +412,16 @@
     let fullList = [];
     let pendingDeleteId = null;
 
+    // Cargar colores del cliente
+    (async function loadClientColors() {
+      try {
+        const res = await fetch(`${apiUrl}&action=get_client_config`);
+        const config = await res.json();
+        if (config.color_primario) document.documentElement.style.setProperty('--color-primary', config.color_primario);
+        if (config.color_secundario) document.documentElement.style.setProperty('--color-secondary', config.color_secundario);
+      } catch (e) { console.log('Using default colors'); }
+    })();
+
     // POLLING CONTROL ROBUSTO
     let intervalId = null;
     function startPolling(refreshFn) {
