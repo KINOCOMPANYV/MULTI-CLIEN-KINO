@@ -9,6 +9,9 @@ $DB_USER = getenv('MYSQLUSER') ?: getenv('DB_USER') ?: "if0_40177665";
 $DB_PASS = getenv('MYSQLPASSWORD') ?: getenv('DB_PASS') ?: "E67zcU4NzLJq/";
 $DB_PORT = getenv('MYSQLPORT') ?: getenv('DB_PORT') ?: "3306";
 
+// Debug: Log which host is being used (útil para troubleshooting en Railway)
+error_log("🔍 [CONFIG] Intentando conectar a: {$DB_HOST}:{$DB_PORT} / DB: {$DB_NAME}");
+
 try {
     $dsn = "mysql:host={$DB_HOST};port={$DB_PORT};dbname={$DB_NAME};charset=utf8mb4";
     $db = new PDO($dsn, $DB_USER, $DB_PASS, [
