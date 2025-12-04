@@ -12,44 +12,23 @@ Si usas el servicio de MySQL de Railway, las variables se inyectan automáticame
 
 El archivo `config.php` ha sido actualizado para buscar estas variables primero.
 
-## 2. Base de Datos
-Abre la herramienta de consulta de base de datos en Railway (o usa un cliente externo como DBeaver conectado a tu DB de Railway) y ejecuta el siguiente script SQL para crear la tabla necesaria:
+## 2. Base de Datos (Automatizado)
+El proyecto incluye un script de migración automática (`migrate.php`) que crea las tablas necesarias (`_control_clientes`, `documents`, `codes`) si no existen.
 
-```sql
-CREATE TABLE IF NOT EXISTS _control_clientes (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  codigo VARCHAR(50) UNIQUE,
-  nombre VARCHAR(100) NOT NULL,
-  password_hash VARCHAR(255) NOT NULL,
-  email VARCHAR(120) DEFAULT NULL,
-  activo BOOLEAN DEFAULT 1,
-  fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
-  ultimo_acceso DATETIME NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_control_clientes_codigo ON _control_clientes (codigo);
-
--- Tabla codes del archivo proporcionado
-CREATE TABLE IF NOT EXISTS `codes` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `document_id` int(11) NOT NULL,
-  `code` varchar(100) NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `document_id` (`document_id`),
-  CONSTRAINT `codes_ibfk_1` FOREIGN KEY (`document_id`) REFERENCES `documents` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- Tabla documents del archivo proporcionado
-CREATE TABLE IF NOT EXISTS `documents` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) NOT NULL,
-  `date` date NOT NULL,
-  `path` varchar(255) NOT NULL,
-  `codigos_extraidos` text DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
+### Opción 1: Ejecución Manual (Recomendado para primera vez)
+Después de desplegar en Railway, ejecuta una sola vez desde la consola de Railway:
+```bash
+php migrate.php
 ```
+
+### Opción 2: Ejecución Automática en cada despliegue
+Configura el **Start Command** en Railway (Settings > Deploy > Start Command):
+```bash
+php migrate.php && apache2-foreground
+```
+(Nota: Si Railway usa Nginx u otro servidor, ajusta el comando final)
+
+El archivo `database/init.sql` contiene la definición completa de las tablas.
 
 ## 3. Despliegue
 1. Sube este código a tu repositorio de GitHub.
