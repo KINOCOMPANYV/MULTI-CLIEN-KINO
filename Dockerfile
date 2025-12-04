@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# 1. Instalar dependencias del sistema y extensiones PHP necesarias (incluyendo Python si lo usas)
+# 1. Instalar dependencias del sistema y Python (Para tu buscador de PDFs)
 RUN apt-get update && apt-get install -y \
     libpng-dev \
     libjpeg-dev \
@@ -12,21 +12,19 @@ RUN apt-get update && apt-get install -y \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install gd pdo pdo_mysql mysqli
 
-# 2. Habilitar mod_rewrite de Apache (crítico para tus rutas)
+# 2. Instalar librería PyPDF2 para el script de búsqueda
+RUN pip3 install PyPDF2 --break-system-packages
+
+# 3. Habilitar mod_rewrite de Apache
 RUN a2enmod rewrite
 
-# 3. Copiar los archivos de tu proyecto al contenedor
+# 4. Copiar código
 COPY . /var/www/html/
 
-# 4. Ajustar permisos (Railway a veces tiene problemas si root es dueño estricto)
+# 5. Permisos para uploads (Evita errores al subir archivos)
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/uploads
 
-# 5. Instalar dependencias de Python (si usas pdf_search.py)
-# COPY requirements.txt .
-# RUN pip3 install -r requirements.txt --break-system-packages
-
-# --- SOLUCIÓN DEL ERROR 502 ---
-# 6. Cambiar el puerto de Apache para usar la variable $PORT de Railway
-#    Esto reemplaza "80" por el valor de $PORT en los archivos de configuración al iniciar.
+# 6. EL ARREGLO DEL ERROR 502 (Importante)
+# Cambia el puerto 80 por el puerto de Railway ($PORT) justo al arrancar
 CMD sed -i "s/80/$PORT/g" /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf && docker-php-entrypoint apache2-foreground
