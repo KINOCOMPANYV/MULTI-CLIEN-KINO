@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS _control_clientes (
   ultimo_acceso DATETIME NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_control_clientes_codigo ON _control_clientes (codigo);
 
 -- Tabla documents (debe crearse antes que codes por la FK)
 CREATE TABLE IF NOT EXISTS `documents` (
