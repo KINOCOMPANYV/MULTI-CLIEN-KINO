@@ -1,8 +1,7 @@
 <?php
-error_log('✅ [INDEX] index.php cargado');
-echo '<!-- INDEX INIT -->';
-require __DIR__ . '/config.php';
 session_start();
+error_log('✅ [INDEX] index.php cargado');
+require __DIR__ . '/config.php';
 
 function has_column(PDO $db, string $table, string $column): bool
 {
