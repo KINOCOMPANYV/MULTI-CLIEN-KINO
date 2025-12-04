@@ -14,4 +14,4 @@ EXPOSE 3000
 
 # Comando de inicio: ejecutar migración y luego servidor PHP
 # Usa la variable $PORT de Railway (por defecto 3000 si no está definida)
-CMD php migrate.php && php -d display_errors=1 -S 0.0.0.0:${PORT:-3000}
+CMD php migrate.php && echo "🚀 Iniciando servidor PHP en puerto ${PORT:-3000}..." && php -d display_errors=1 -S 0.0.0.0:${PORT:-3000}
