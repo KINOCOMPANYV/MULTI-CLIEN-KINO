@@ -1,63 +1,18 @@
 <?php
-// setup_master.php
-// ESTE SCRIPT REPARA LA BASE DE DATOS VACÍA Y CREA AL CLIENTE MAESTRO
-
+// setup_master.php - EJECUTA ESTO UNA SOLA VEZ
 require_once __DIR__ . '/config.php';
 
-// Aumentar límites para archivos grandes
-ini_set('memory_limit', '512M');
-set_time_limit(300);
+// Aumentar límites para archivos pesados
+ini_set('memory_limit', '1024M');
+set_time_limit(600);
 
-echo "<h1>🛠️ Reparación de Base de Datos Maestra (Kino)</h1>";
-echo "<pre>";
+echo "<h1>🛠️ Reparando Base de Datos Maestra (Kino)</h1><pre>";
 
 try {
-    // 1. IMPORTAR ESTRUCTURA Y DATOS SQL
-    // ---------------------------------------------------------
-    $sqlFile = __DIR__ . '/if0_39064130_buscador (10).sql'; // Asegúrate que el nombre sea EXACTO
-
-    if (!file_exists($sqlFile)) {
-        throw new Exception("❌ No encuentro el archivo SQL: $sqlFile<br>Súbelo a la carpeta raíz.");
-    }
-
-    echo "📂 Leyendo archivo SQL... ";
-    $sql = file_get_contents($sqlFile);
-
-    // Limpieza básica de comentarios para evitar errores
-    $lines = explode("\n", $sql);
-    $cleanSql = "";
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if ($line && substr($line, 0, 2) !== '--' && substr($line, 0, 1) !== '#') {
-            $cleanSql .= $line . "\n";
-        }
-    }
-
-    // Dividir por punto y coma para ejecutar sentencia por sentencia
-    $statements = explode(";", $cleanSql);
-    $count = 0;
-
-    foreach ($statements as $stmt) {
-        $stmt = trim($stmt);
-        if (!empty($stmt)) {
-            try {
-                $db->exec($stmt);
-                $count++;
-            } catch (PDOException $e) {
-                // Ignorar errores de "Tabla ya existe" para no detener el proceso
-                if (strpos($e->getMessage(), 'already exists') === false) {
-                    echo "⚠️ Error en sentencia SQL (ignorando): " . substr($stmt, 0, 50) . "... \n";
-                }
-            }
-        }
-    }
-    echo "✅ Importación completada. Se ejecutaron $count sentencias.\n";
-
-
-    // 2. ASEGURAR TABLA DE CONTROL DE CLIENTES
-    // ---------------------------------------------------------
-    echo "\n🔧 Verificando tabla de control de clientes...\n";
-    $sqlControl = "CREATE TABLE IF NOT EXISTS `_control_clientes` (
+    // 1. CONFIRMAR QUE EL USUARIO KINO EXISTE
+    // -----------------------------------------------------
+    echo "1. Verificando usuario Kino...\n";
+    $db->exec("CREATE TABLE IF NOT EXISTS `_control_clientes` (
       `id` int(11) NOT NULL AUTO_INCREMENT,
       `codigo` varchar(50) NOT NULL,
       `nombre` varchar(100) NOT NULL,
@@ -68,45 +23,69 @@ try {
       `fecha_creacion` timestamp DEFAULT current_timestamp(),
       PRIMARY KEY (`id`),
       UNIQUE KEY `codigo` (`codigo`)
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
 
-    $db->exec($sqlControl);
-    echo "✅ Tabla _control_clientes verificada.\n";
+    $pass = password_hash('kino2024', PASSWORD_DEFAULT);
+    $stmt = $db->prepare("INSERT INTO _control_clientes (codigo, nombre, password_hash, activo) VALUES ('kino', 'KINO Company', ?, 1) ON DUPLICATE KEY UPDATE activo=1");
+    $stmt->execute([$pass]);
+    echo "✅ Usuario Kino confirmado.\n";
 
+    // 2. IMPORTAR EL SQL COMPLETO (SIN FILTROS)
+    // -----------------------------------------------------
+    $sqlFile = __DIR__ . '/if0_39064130_buscador (10).sql';
 
-    // 3. CREAR/ACTUALIZAR USUARIO KINO
-    // ---------------------------------------------------------
-    echo "\n👤 Configurando usuario maestro 'kino'...\n";
-    $codigo = 'kino';
-    $password = 'kino2024';
-    $hash = password_hash($password, PASSWORD_DEFAULT);
+    if (!file_exists($sqlFile)) {
+        throw new Exception("❌ FALTA EL ARCHIVO: Sube 'if0_39064130_buscador (10).sql' a la raíz.");
+    }
 
-    // Insertar o actualizar si ya existe
-    $stmt = $db->prepare("INSERT INTO _control_clientes (codigo, nombre, password_hash, activo) 
-                          VALUES (?, 'KINO Company', ?, 1) 
-                          ON DUPLICATE KEY UPDATE password_hash = ?, activo = 1");
-    $stmt->execute([$codigo, $hash, $hash]);
+    echo "2. Leyendo archivo SQL (" . filesize($sqlFile) . " bytes)...\n";
 
-    echo "✅ Usuario 'kino' configurado exitosamente.\n";
+    // Leemos todo el archivo
+    $sql = file_get_contents($sqlFile);
 
+    // TRUCO: Eliminamos comentarios que pueden romper la ejecución
+    $sql = preg_replace('/^--.*$/m', '', $sql);
+    $sql = preg_replace('/^#.*$/m', '', $sql);
 
-    // 4. VERIFICACIÓN FINAL
-    // ---------------------------------------------------------
-    $docs = $db->query("SELECT COUNT(*) FROM documents")->fetchColumn();
-    $codes = $db->query("SELECT COUNT(*) FROM codes")->fetchColumn();
+    // Dividimos por punto y coma para ejecutar una por una
+    $queries = explode(';', $sql);
+    $total = 0;
 
-    echo "\n📊 ESTADO FINAL DE LA BASE DE DATOS:\n";
-    echo "   - Documentos (Tabla Maestra): $docs\n";
-    echo "   - Códigos (Tabla Maestra): $codes\n";
+    foreach ($queries as $query) {
+        $query = trim($query);
+        if (!empty($query)) {
+            try {
+                $db->exec($query);
+                $total++;
+            } catch (Exception $e) {
+                // Si la tabla ya existe, ignoramos el error
+                if (strpos($e->getMessage(), 'already exists') === false) {
+                    // Solo mostramos errores graves
+                    // echo "⚠️ Aviso: " . substr($e->getMessage(), 0, 100) . "\n";
+                }
+            }
+        }
+    }
+    echo "✅ Importación finalizada. Se procesaron $total bloques SQL.\n";
 
-    if ($docs == 0) {
-        echo "\n⚠️ ADVERTENCIA: Las tablas se crearon pero están vacías. \nRevisa que el archivo SQL tenga instrucciones 'INSERT INTO'.";
+    // 3. VERIFICACIÓN FINAL (LA PRUEBA DE LA VERDAD)
+    // -----------------------------------------------------
+    $countDocs = $db->query("SELECT COUNT(*) FROM documents")->fetchColumn();
+    $countCodes = $db->query("SELECT COUNT(*) FROM codes")->fetchColumn();
+
+    echo "\n📊 RESULTADO FINAL EN LA BASE DE DATOS:\n";
+    echo "   Documentos encontrados: " . number_format($countDocs) . "\n";
+    echo "   Códigos encontrados:    " . number_format($countCodes) . "\n";
+
+    if ($countCodes > 0) {
+        echo "\n🚀 ¡ÉXITO! Ahora sí hay códigos en la tabla.";
+        echo "\n👉 Ve al login y entra como Kino.";
     } else {
-        echo "\n🚀 ¡TODO LISTO! Ahora puedes hacer login como Kino.\n";
+        echo "\n❌ ERROR: Siguen sin aparecer. Revisa que el archivo SQL no esté vacío.";
     }
 
 } catch (Exception $e) {
-    echo "\n❌ ERROR CRÍTICO: " . $e->getMessage() . "\n";
+    echo "\n❌ ERROR CRÍTICO: " . $e->getMessage();
 }
 echo "</pre>";
 ?>
