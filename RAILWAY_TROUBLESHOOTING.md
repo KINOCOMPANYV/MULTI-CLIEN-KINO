@@ -17,34 +17,39 @@ Tu aplicación está intentando conectarse a `sq1209.infinityfree.com` (servidor
    - `MYSQLPASSWORD`
    - `MYSQLPORT` (generalmente `3306`)
 
-### 2. Verificar Variables en el Servicio MULTI-CLIEN-KINO
+### 2. Agregar Referencias de Variables (CRÍTICO)
 
-1. Haz clic en tu servicio **MULTI-CLIEN-KINO**
-2. Ve a **Variables**
-3. **IMPORTANTE:** Verifica que NO haya variables con estos nombres apuntando al servidor externo:
-   - `DB_HOST` = `sq1209.infinityfree.com` ❌ **ELIMINAR**
-   - `DB_NAME` = `if0_40177665_nuevaprueva` ❌ **ELIMINAR**
-   - `DB_USER` = `if0_40177665` ❌ **ELIMINAR**
-   - `DB_PASS` ❌ **ELIMINAR**
+**El problema:** Las variables del servicio MySQL existen, pero NO están inyectadas en tu servicio MULTI-CLIEN-KINO.
 
-4. **Las variables correctas deben ser:**
-   - `MYSQLHOST` (inyectada automáticamente por el plugin MySQL)
-   - `MYSQLDATABASE` (inyectada automáticamente)
-   - `MYSQLUSER` (inyectada automáticamente)
-   - `MYSQLPASSWORD` (inyectada automáticamente)
-   - `MYSQLPORT` (inyectada automáticamente)
+**Solución paso a paso:**
 
-> **Nota:** Si las variables `MYSQL*` no aparecen automáticamente, es posible que necesites reconectar el servicio MySQL o añadirlas manualmente copiando los valores del servicio MySQL.
+1. Ve al servicio **MULTI-CLIEN-KINO** en Railway
+2. Haz clic en la pestaña **Variables**
+3. Haz clic en **+ New Variable**
+4. Selecciona **Add Reference** (Agregar Referencia)
+5. En el selector, elige el servicio **MySQL**
+6. Railway inyectará automáticamente TODAS las variables:
+   - `MYSQLHOST` = `mysql.railway.internal`
+   - `MYSQLDATABASE` = `railway`
+   - `MYSQLUSER` = `root`
+   - `MYSQLPASSWORD` = (la contraseña generada)
+   - `MYSQLPORT` = `3306`
 
-### 3. Configurar el Start Command (Opcional pero Recomendado)
+**Verificación:** Después de añadir la referencia, deberías ver estas variables listadas en la pestaña Variables de MULTI-CLIEN-KINO.
+
+> **IMPORTANTE:** Si ves variables `DB_HOST`, `DB_NAME`, etc. con valores del servidor externo (`sq1209.infinityfree.com`), **ELIMÍNALAS**. Solo deben existir las variables `MYSQL*`.
+
+### 3. Configurar el Start Command
 
 1. En el servicio **MULTI-CLIEN-KINO**, ve a **Settings** > **Deploy**
 2. En **Start Command**, configura:
    ```bash
-   php migrate.php && apache2-foreground
+   php migrate.php && php-fpm
    ```
    
-   Esto ejecutará la migración automáticamente antes de iniciar Apache.
+   Esto ejecutará la migración automáticamente antes de iniciar PHP-FPM.
+
+> **Nota:** Si usas el Dockerfile incluido en el proyecto, el comando por defecto es `apache2-foreground`. Si ves el error "apache2-foreground: command not found", cambia el Start Command a `php-fpm` como se indica arriba.
 
 ### 4. Redesplegar
 
