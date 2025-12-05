@@ -216,6 +216,47 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// CREAR NUEVO CLIENTE (VACÍO - SOLO ESTRUCTURA)
+if ($action === 'create_empty' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        $codigo = sanitize_code($codigoInput);
+        $nombre = trim($nombreInput);
+        $pass = trim($_POST['password'] ?? '');
+
+        if ($codigo === '' || $nombre === '' || $pass === '') {
+            throw new Exception('Faltan campos requeridos.');
+        }
+
+        // 1. Validar si existe
+        $st = $db->prepare('SELECT 1 FROM _control_clientes WHERE codigo = ?');
+        $st->execute([$codigo]);
+        if ($st->fetch())
+            throw new Exception('El código ya existe.');
+
+        // 2. Crear registro en _control_clientes
+        $hash = password_hash($pass, PASSWORD_BCRYPT);
+        $db->prepare('INSERT INTO _control_clientes (codigo, nombre, password_hash, color_primario, color_secundario, activo) VALUES (?, ?, ?, ?, ?, 1)')
+            ->execute([$codigo, $nombre, $hash, $colorPrimario, $colorSecundario]);
+
+        // 3. Crear tablas clonando la estructura (LIKE) pero SIN copiar datos
+        $db->exec("CREATE TABLE IF NOT EXISTS `{$codigo}_documents` LIKE `documents`");
+        $db->exec("CREATE TABLE IF NOT EXISTS `{$codigo}_codes` LIKE `codes`");
+
+        // 4. Crear carpeta de uploads VACÍA
+        $uploadsClient = __DIR__ . '/uploads/' . $codigo;
+        if (!is_dir($uploadsClient)) {
+            mkdir($uploadsClient, 0777, true);
+        }
+        
+        // Crear un index.html vacío por seguridad para evitar listar directorios
+        file_put_contents($uploadsClient . '/index.html', '');
+
+        $ok = "✅ Cliente VACÍO creado.<br><strong>Código:</strong> {$codigo}<br><strong>Contraseña:</strong> {$pass}<br>Listo para subir archivos nuevos.";
+    } catch (Exception $e) {
+        $err = '❌ ' . $e->getMessage();
+    }
+}
+
 // Obtener lista de clientes
 $clients = [];
 try {
@@ -440,7 +481,6 @@ try {
             <?php if ($err): ?>
                 <div class="err"><?= htmlspecialchars($err) ?></div><?php endif; ?>
             <form method="post">
-                <input type="hidden" name="action" value="create">
                 <div class="row">
                     <div>
                         <label>Código (minúsculas)</label>
@@ -467,7 +507,16 @@ try {
                         </div>
                     </div>
                 </div>
-                <button type="submit">✅ Crear Cliente (Clonar de Kino)</button>
+
+                <div style="display: flex; gap: 10px; margin-top: 16px;">
+                    <button type="submit" name="action" value="create" style="flex: 1;">
+                        ✅ Clonar Todo (Datos Kino)
+                    </button>
+                    
+                    <button type="submit" name="action" value="create_empty" style="flex: 1; background-color: #4b5563;">
+                        ✨ Crear Cliente Vacío
+                    </button>
+                </div>
             </form>
         </div>
 
