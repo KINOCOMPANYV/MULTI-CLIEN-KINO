@@ -559,8 +559,8 @@
                 <button data-id="${d.id}" onclick="toggleCodes(this)" class="btn btn--secondary px-2 py-1 text-lg">Ver Códigos</button>
                 
                 ${searchCode ? `
-                <a href="bc/visor.html?file=../uploads/${d.path}&code=${encodeURIComponent(searchCode)}" target="_blank" 
-                   class="btn btn--highlight px-2 py-1 text-lg flex items-center justify-center gap-1">
+                <a href="visor.html?file=uploads/${d.path}&code=${encodeURIComponent(searchCode)}" target="_blank" 
+                   class="btn btn--highlight px-2 py-1 text-lg flex items-center justify-center gap-1 mt-1">
                    🖍️ Resaltar
                 </a>
                 ` : ''}
