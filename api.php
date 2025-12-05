@@ -89,10 +89,15 @@ $action = $_REQUEST['action'] ?? '';
 try {
     switch ($action) {
         case 'get_client_config':
-            $stmt = $db->prepare("SELECT color_primario, color_secundario FROM _control_clientes WHERE codigo = ?");
+            // Agregamos titulo_app al SELECT
+            $stmt = $db->prepare("SELECT color_primario, color_secundario, titulo_app FROM _control_clientes WHERE codigo = ?");
             $stmt->execute([$cliente]);
             $config = $stmt->fetch(PDO::FETCH_ASSOC);
-            json_exit($config ?: ['color_primario' => '#2563eb', 'color_secundario' => '#F87171']);
+            json_exit($config ?: [
+                'color_primario' => '#2563eb',
+                'color_secundario' => '#F87171',
+                'titulo_app' => 'KINO COMPANY SAS V1' // Default
+            ]);
 
         case 'suggest':
             $term = trim($_GET['term'] ?? '');
