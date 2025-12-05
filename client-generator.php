@@ -63,15 +63,16 @@ if ($action === 'edit' && !empty($_POST['edit_codigo'])) {
     try {
         $codigo = sanitize_code($_POST['edit_codigo']);
         $nombre = trim($_POST['edit_nombre'] ?? '');
-        $titulo = trim($_POST['edit_titulo_app'] ?? 'KINO COMPANY SAS V1'); // <--- NUEVO
+        $titulo = trim($_POST['edit_titulo_app'] ?? 'KINO COMPANY SAS V1');
+        $borrado = trim($_POST['edit_clave_borrado'] ?? '0000'); // <--- NUEVO
         $pass = trim($_POST['edit_password'] ?? '');
         $colorP = $_POST['edit_color_primario'] ?? '#2563eb';
         $colorS = $_POST['edit_color_secundario'] ?? '#F87171';
 
         if ($nombre) {
-            // Agregamos titulo_app a la consulta
-            $sql = 'UPDATE _control_clientes SET nombre = ?, titulo_app = ?, color_primario = ?, color_secundario = ?';
-            $params = [$nombre, $titulo, $colorP, $colorS];
+            // Se agrega clave_borrado al UPDATE
+            $sql = 'UPDATE _control_clientes SET nombre = ?, titulo_app = ?, clave_borrado = ?, color_primario = ?, color_secundario = ?';
+            $params = [$nombre, $titulo, $borrado, $colorP, $colorS];
 
             if ($pass) {
                 $sql .= ', password_hash = ?';
@@ -176,7 +177,8 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $codigo = sanitize_code($codigoInput);
         $nombre = trim($nombreInput);
-        $titulo = trim($_POST['titulo_app'] ?? 'KINO COMPANY SAS V1'); // <--- Capturar título
+        $titulo = trim($_POST['titulo_app'] ?? 'KINO COMPANY SAS V1');
+        $borrado = trim($_POST['clave_borrado'] ?? '0000'); // <--- NUEVO
         $pass = trim($_POST['password'] ?? '');
 
         if ($codigo === '' || $nombre === '' || $pass === '') {
@@ -191,8 +193,8 @@ if ($action === 'create' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // 2. Crear registro en _control_clientes
         $hash = password_hash($pass, PASSWORD_BCRYPT);
-        $db->prepare('INSERT INTO _control_clientes (codigo, nombre, titulo_app, password_hash, color_primario, color_secundario, activo) VALUES (?, ?, ?, ?, ?, ?, 1)')
-            ->execute([$codigo, $nombre, $titulo, $hash, $colorPrimario, $colorSecundario]);
+        $db->prepare('INSERT INTO _control_clientes (codigo, nombre, titulo_app, clave_borrado, password_hash, color_primario, color_secundario, activo) VALUES (?, ?, ?, ?, ?, ?, ?, 1)')
+            ->execute([$codigo, $nombre, $titulo, $borrado, $hash, $colorPrimario, $colorSecundario]);
 
         // 3. Crear tablas clonando la estructura de KINO (documents y codes)
         $db->exec("CREATE TABLE IF NOT EXISTS `{$codigo}_documents` LIKE `documents`");
@@ -224,7 +226,8 @@ if ($action === 'create_empty' && $_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $codigo = sanitize_code($codigoInput);
         $nombre = trim($nombreInput);
-        $titulo = trim($_POST['titulo_app'] ?? 'KINO COMPANY SAS V1'); // <--- Capturar título
+        $titulo = trim($_POST['titulo_app'] ?? 'KINO COMPANY SAS V1');
+        $borrado = trim($_POST['clave_borrado'] ?? '0000'); // <--- NUEVO
         $pass = trim($_POST['password'] ?? '');
 
         if ($codigo === '' || $nombre === '' || $pass === '') {
@@ -239,8 +242,8 @@ if ($action === 'create_empty' && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // 2. Crear registro en _control_clientes
         $hash = password_hash($pass, PASSWORD_BCRYPT);
-        $db->prepare('INSERT INTO _control_clientes (codigo, nombre, titulo_app, password_hash, color_primario, color_secundario, activo) VALUES (?, ?, ?, ?, ?, ?, 1)')
-            ->execute([$codigo, $nombre, $titulo, $hash, $colorPrimario, $colorSecundario]);
+        $db->prepare('INSERT INTO _control_clientes (codigo, nombre, titulo_app, clave_borrado, password_hash, color_primario, color_secundario, activo) VALUES (?, ?, ?, ?, ?, ?, ?, 1)')
+            ->execute([$codigo, $nombre, $titulo, $borrado, $hash, $colorPrimario, $colorSecundario]);
 
         // 3. Crear tablas clonando la estructura (LIKE) pero SIN copiar datos
         $db->exec("CREATE TABLE IF NOT EXISTS `{$codigo}_documents` LIKE `documents`");
@@ -502,8 +505,12 @@ try {
                 </div>
                 <div class="row">
                     <div>
-                        <label>Contraseña</label>
+                        <label>Contraseña Acceso (Login)</label>
                         <input name="password" type="password" required minlength="4">
+                    </div>
+                    <div>
+                        <label>Clave para Borrar Docs</label>
+                        <input name="clave_borrado" required value="0000" placeholder="Ej: 1234">
                     </div>
                     <div class="row">
                         <div>
@@ -561,7 +568,7 @@ try {
                                         <a href="index.html?c=<?= urlencode($c['codigo']) ?>" target="_blank"><button
                                                 type="button" class="btn-success">🔗 App</button></a>
                                         <button type="button"
-                                            onclick="openEdit('<?= $c['codigo'] ?>', '<?= htmlspecialchars($c['nombre']) ?>', '<?= htmlspecialchars($c['titulo_app'] ?? '') ?>', '<?= $c['color_primario'] ?? '#2563eb' ?>', '<?= $c['color_secundario'] ?? '#F87171' ?>')"
+                                            onclick="openEdit('<?= $c['codigo'] ?>', '<?= htmlspecialchars($c['nombre']) ?>', '<?= htmlspecialchars($c['titulo_app'] ?? '') ?>', '<?= $c['clave_borrado'] ?? '0000' ?>', '<?= $c['color_primario'] ?? '#2563eb' ?>', '<?= $c['color_secundario'] ?? '#F87171' ?>')"
                                             class="btn-warning">✏️ Editar</button>
                                         <button type="button" onclick="openDelete('<?= $c['codigo'] ?>')" class="btn-danger">🗑️
                                             Eliminar</button>
@@ -587,6 +594,8 @@ try {
                 <input name="edit_nombre" id="edit_nombre" required>
                 <label>Título de la App</label>
                 <input name="edit_titulo_app" id="edit_titulo_app" required>
+                <label>Clave de Borrado</label>
+                <input name="edit_clave_borrado" id="edit_clave_borrado" required>
                 <label>Nueva Contraseña (dejar vacío para no cambiar)</label>
                 <input name="edit_password" type="password">
                 <div class="row">
@@ -638,10 +647,11 @@ try {
     </div>
 
     <script>
-        function openEdit(codigo, nombre, titulo, colorP, colorS) {
+        function openEdit(codigo, nombre, titulo, borrado, colorP, colorS) {
             document.getElementById('edit_codigo').value = codigo;
             document.getElementById('edit_nombre').value = nombre;
             document.getElementById('edit_titulo_app').value = titulo;
+            document.getElementById('edit_clave_borrado').value = borrado;
             document.getElementById('edit_color_p').value = colorP;
             document.getElementById('edit_color_s').value = colorS;
             document.getElementById('editModal').classList.add('active');

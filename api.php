@@ -99,6 +99,35 @@ try {
                 'titulo_app' => 'KINO COMPANY SAS V1' // Default
             ]);
 
+        // Validar Contraseña de Acceso (Login)
+        case 'login':
+            $pass = $_POST['password'] ?? '';
+            $stmt = $db->prepare("SELECT password_hash FROM _control_clientes WHERE codigo = ?");
+            $stmt->execute([$cliente]);
+            $hash = $stmt->fetchColumn();
+
+            if ($hash && password_verify($pass, $hash)) {
+                json_exit(['success' => true]);
+            } else {
+                json_exit(['error' => 'Contraseña incorrecta']);
+            }
+            break;
+
+        // Validar Clave de Borrado
+        case 'verify_delete_key':
+            $key = $_POST['key'] ?? '';
+            $stmt = $db->prepare("SELECT clave_borrado FROM _control_clientes WHERE codigo = ?");
+            $stmt->execute([$cliente]);
+            $realKey = $stmt->fetchColumn();
+
+            // Compara texto plano (puedes usar hash si prefieres mayor seguridad)
+            if ($realKey === $key) {
+                json_exit(['success' => true]);
+            } else {
+                json_exit(['error' => 'Clave de borrado incorrecta']);
+            }
+            break;
+
         case 'suggest':
             $term = trim($_GET['term'] ?? '');
             if ($term === '') {

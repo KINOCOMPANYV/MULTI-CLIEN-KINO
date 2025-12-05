@@ -412,8 +412,8 @@
       window.location.href = 'login.php';
     }
     const apiUrl = `${apiBase}?c=${encodeURIComponent(clientCode)}`;
-    const ACCESS_KEY = '565';
-    const DELETION_KEY = '0101';
+    // const ACCESS_KEY = '565'; 
+    // const DELETION_KEY = '0101';
     let fullList = [];
     let pendingDeleteId = null;
 
@@ -453,15 +453,37 @@
       document.getElementById('search-alert').innerText = '';
     }
 
-    document.getElementById('submitAccess').onclick = () => {
-      const v = document.getElementById('accessInput').value;
-      if (v === ACCESS_KEY) {
-        document.getElementById('loginOverlay').classList.add('hidden');
-        document.getElementById('mainContent').classList.remove('hidden');
-        initApp();
-      } else {
-        document.getElementById('errorMsg').classList.remove('hidden');
+    document.getElementById('submitAccess').onclick = async () => {
+      const pass = document.getElementById('accessInput').value;
+      const btn = document.getElementById('submitAccess');
+      const err = document.getElementById('errorMsg');
+
+      btn.disabled = true;
+      btn.textContent = "Verificando...";
+      err.classList.add('hidden');
+
+      try {
+        const fd = new FormData();
+        fd.append('action', 'login');
+        fd.append('password', pass);
+
+        const res = await fetch(apiUrl, { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (data.success) {
+          document.getElementById('loginOverlay').classList.add('hidden');
+          document.getElementById('mainContent').classList.remove('hidden');
+          initApp();
+        } else {
+          err.textContent = "Contraseña incorrecta.";
+          err.classList.remove('hidden');
+        }
+      } catch (e) {
+        err.textContent = "Error de conexión.";
+        err.classList.remove('hidden');
       }
+      btn.disabled = false;
+      btn.textContent = "Enviar";
     };
     document.getElementById('accessInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('submitAccess').click(); });
 
@@ -489,12 +511,43 @@
       const dkErr = document.getElementById('deleteKeyError');
 
       document.getElementById('deleteKeyOk').onclick = async () => {
-        if (dkInput.value !== DELETION_KEY) {
-          dkErr.classList.remove('hidden'); dkInput.value = ''; dkInput.focus(); return;
+        const keyVal = document.getElementById('deleteKeyInput').value;
+        const dkErr = document.getElementById('deleteKeyError');
+        const dkBtn = document.getElementById('deleteKeyOk');
+
+        dkBtn.disabled = true;
+        dkBtn.textContent = "...";
+
+        try {
+          // Verificar clave con API
+          const fd = new FormData();
+          fd.append('action', 'verify_delete_key');
+          fd.append('key', keyVal);
+
+          const res = await fetch(apiUrl, { method: 'POST', body: fd });
+          const data = await res.json();
+
+          if (!data.success) {
+            dkErr.classList.remove('hidden');
+            dkBtn.disabled = false;
+            dkBtn.textContent = "Enviar";
+            return;
+          }
+
+          // Si es correcta, proceder a borrar
+          document.getElementById('deleteOverlay').classList.add('hidden');
+          dkErr.classList.add('hidden');
+          document.getElementById('deleteKeyInput').value = '';
+
+          const ok = await confirmDialog('¿Eliminar este documento permanentemente?');
+          if (ok) {
+            await deleteDoc(pendingDeleteId);
+          }
+        } catch (e) {
+          alert("Error de red verificando clave.");
         }
-        deleteOv.classList.add('hidden'); dkErr.classList.add('hidden'); dkInput.value = '';
-        const ok = await confirmDialog('¿Eliminar este documento?'); if (!ok) return;
-        await deleteDoc(pendingDeleteId);
+        dkBtn.disabled = false;
+        dkBtn.textContent = "Enviar";
       };
       document.getElementById('deleteKeyCancel').onclick = () => { deleteOv.classList.add('hidden'); dkErr.classList.add('hidden'); dkInput.value = ''; };
 
