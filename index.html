@@ -3,6 +3,11 @@
 
 <head>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    // Configurar worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
   <script>
     // Interceptamos console.error
     (function () {
@@ -352,28 +357,56 @@
 
       <div id="tab-upload" class="tab-content hidden">
         <h2 class="text-xl font-semibold mb-4">Subir / Editar Documento</h2>
+
+        <div class="flex gap-4 mb-6">
+          <button type="button" onclick="setUploadMode('manual')" id="btn-mode-manual"
+            class="btn btn--secondary flex-1 py-4 text-lg border-2 border-transparent">
+            ✋ Subida Manual
+          </button>
+          <button type="button" onclick="setUploadMode('auto')" id="btn-mode-auto"
+            class="btn btn--secondary flex-1 py-4 text-lg border-2 border-transparent">
+            🤖 Subida Automática
+          </button>
+        </div>
+
+        <div id="upload-help-text" class="mb-4 p-3 bg-blue-50 text-blue-800 rounded text-sm hidden">
+        </div>
+
         <form id="form-upload" enctype="multipart/form-data" class="space-y-4">
           <input id="docId" type="hidden" name="id" />
+
           <div>
             <label class="block mb-1 text-lg">Nombre</label>
             <input id="name" name="name" type="text" required class="w-full border rounded px-3 py-2 text-lg" />
           </div>
+
           <div>
             <label class="block mb-1 text-lg">Fecha</label>
             <input id="date" name="date" type="date" required class="w-full border rounded px-3 py-2 text-lg" />
           </div>
+
           <div>
             <label class="block mb-1 text-lg">PDF o Documento</label>
-            <input id="file" name="file" type="file" accept="application/pdf,image/*" class="w-full text-lg" />
+            <input id="file" name="file" type="file" accept="application/pdf,image/*" class="w-full text-lg"
+              onchange="handleFileSelect(this)" />
+
             <p id="uploadWarning" class="mt-1 text-red-600 text-sm hidden">
               El archivo excede los 10 MB. Por favor, sube uno menor.
             </p>
+
+            <div id="auto-extract-status" class="hidden mt-2 text-sm font-semibold text-orange-600">
+              ⏳ Analizando PDF y extrayendo códigos...
+            </div>
           </div>
+
           <div>
-            <label class="block mb-1 text-lg">Códigos</label>
-            <textarea id="codes" name="codes" rows="4" class="w-full border rounded px-3 py-2 text-lg"></textarea>
+            <label class="block mb-1 text-lg">Códigos (Uno por línea)</label>
+            <textarea id="codes" name="codes" rows="6" class="w-full border rounded px-3 py-2 text-lg font-mono"
+              placeholder="Los códigos aparecerán aquí..."></textarea>
+            <p class="text-sm text-gray-500 mt-1 text-right" id="code-count">0 códigos</p>
           </div>
-          <button type="submit" class="btn btn--primary btn--full text-lg">Guardar</button>
+
+          <button type="submit" class="btn btn--primary btn--full text-lg">Guardar Documento</button>
         </form>
       </div>
 
@@ -757,6 +790,219 @@
           stopPolling();
         }
       };
+    }
+
+    // --- LÓGICA DE SUBIDA MANUAL VS AUTOMÁTICA ---//
+
+    let currentUploadMode = 'manual'; // Por defecto
+
+    function setUploadMode(mode) {
+      currentUploadMode = mode;
+
+      // Estilos de botones
+      const btnManual = document.getElementById('btn-mode-manual');
+      const btnAuto = document.getElementById('btn-mode-auto');
+      const helpText = document.getElementById('upload-help-text');
+
+      // Reset clases
+      btnManual.className = "btn flex-1 py-4 text-lg border-2 " + (mode === 'manual' ? "btn--primary border-blue-600" : "btn--secondary border-transparent");
+      btnAuto.className = "btn flex-1 py-4 text-lg border-2 " + (mode === 'auto' ? "btn--primary border-blue-600" : "btn--secondary border-transparent");
+
+      // Texto de ayuda
+      helpText.classList.remove('hidden');
+      if (mode === 'manual') {
+        helpText.innerHTML = `
+                <strong>Modo Manual:</strong> Con este botón cargarás el PDF de forma normal. 
+                Tendrás que escribir o pegar los códigos manualmente en el cuadro de abajo.
+            `;
+      } else {
+        helpText.innerHTML = `
+                <strong>Modo Automático:</strong> Al seleccionar el PDF, el sistema lo leerá, 
+                buscará referencias (como "Ref:", "Factura:", "Inv:") y rellenará los códigos automáticamente.
+            `;
+      }
+    }
+
+    // Iniciar en modo manual al cargar
+    setUploadMode('manual');
+
+    // Manejador al seleccionar archivo
+    async function handleFileSelect(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      // Validación de tamaño (existente)
+      const warning = document.getElementById('uploadWarning'); // Reutilizamos o usamos el warning original
+      if (file.size > 10 * 1024 * 1024) {
+        warning.classList.remove('hidden');
+        return;
+      } else {
+        warning.classList.add('hidden');
+      }
+
+      // Si estamos en MODO AUTOMÁTICO y es un PDF
+      if (currentUploadMode === 'auto' && file.type === 'application/pdf') {
+        await extractCodesFromPdf(file);
+      }
+    }
+
+    // --- MOTOR DE EXTRACCIÓN (Traducción de tu código React) ---
+    async function extractCodesFromPdf(file) {
+      const statusDiv = document.getElementById('auto-extract-status');
+      const codesArea = document.getElementById('codes');
+      const countLabel = document.getElementById('code-count');
+
+      try {
+        statusDiv.classList.remove('hidden');
+        statusDiv.innerHTML = "⏳ Leyendo PDF...";
+        codesArea.value = "Leyendo archivo...";
+
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+
+        let fullText = "";
+
+        // 1. Leer todas las páginas
+        for (let i = 1; i <= pdf.numPages; i++) {
+          statusDiv.innerHTML = `⏳ Analizando página ${i} de ${pdf.numPages}...`;
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+
+          // Lógica de detección de líneas (tu lógica de 'lastY')
+          let pageText = "";
+          let lastY = -1;
+
+          for (const item of textContent.items) {
+            // Si la diferencia vertical es grande, es nueva línea
+            if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 10) {
+              pageText += "\n";
+            } else if (pageText.length > 0 && !pageText.endsWith("\n") && !pageText.endsWith(" ") && item.str.trim().length > 0) {
+              // Agregar espacio si no es inicio de línea
+              if (!item.str.startsWith(" ")) pageText += " ";
+            }
+
+            pageText += item.str;
+            lastY = item.transform[5];
+          }
+          fullText += pageText + "\n";
+        }
+
+        // 2. Ejecutar algoritmo de búsqueda
+        statusDiv.innerHTML = "⚙️ Procesando textos...";
+        const extractedCodes = runExtractionAlgorithm(fullText);
+
+        // 3. Mostrar resultados
+        if (extractedCodes.length > 0) {
+          codesArea.value = extractedCodes.join('\n');
+          statusDiv.innerHTML = `✅ ¡Éxito! Se encontraron ${extractedCodes.length} códigos.`;
+          statusDiv.className = "mt-2 text-sm font-semibold text-green-600";
+          countLabel.innerText = `${extractedCodes.length} códigos encontrados`;
+        } else {
+          codesArea.value = "";
+          statusDiv.innerHTML = "⚠️ No se encontraron códigos con los patrones (Ref:, Factura:, Inv:).";
+          statusDiv.className = "mt-2 text-sm font-semibold text-yellow-600";
+        }
+
+      } catch (e) {
+        console.error(e);
+        statusDiv.innerHTML = "❌ Error al leer el PDF: " + e.message;
+        statusDiv.className = "mt-2 text-sm font-semibold text-red-600";
+        codesArea.value = "";
+      }
+    }
+
+    // Algoritmo de búsqueda puro (tu lógica 'extractCodes')
+    function runExtractionAlgorithm(originalText) {
+      // Configuración (Hardcoded por defecto, ajustable)
+      const startMarkers = ["Ref:", "Factura:", "Inv:", "REF", "Ref"]; // Tus marcadores
+      const stopChars = [".", ",", "/", "-"];
+      const ignoreNewlines = true;
+
+      // Pre-proceso: Limpiar saltos de línea raros si se solicita
+      let textToProcess = originalText;
+      if (ignoreNewlines) {
+        textToProcess = textToProcess.replace(/ *[\r\n]+ */g, "\n");
+      }
+
+      const foundCodes = [];
+      const lowerText = textToProcess.toLowerCase();
+
+      let searchIndex = 0;
+
+      while (searchIndex < textToProcess.length) {
+        // 1. Encontrar mejor marcador de inicio
+        let bestStartIndex = -1;
+        let bestTokenLength = 0;
+
+        for (const token of startMarkers) {
+          const tokenLower = token.toLowerCase();
+          const idx = lowerText.indexOf(tokenLower, searchIndex);
+
+          if (idx !== -1) {
+            if (bestStartIndex === -1 || idx < bestStartIndex) {
+              bestStartIndex = idx;
+              bestTokenLength = token.length;
+            }
+          }
+        }
+
+        if (bestStartIndex === -1) break; // No hay más códigos
+
+        // 2. Posicionar cursor después del marcador
+        let cursor = bestStartIndex + bestTokenLength;
+
+        // 3. Saltar espacios y saltos de línea hasta encontrar el valor
+        while (cursor < textToProcess.length && /\s/.test(textToProcess[cursor])) {
+          cursor++;
+        }
+
+        const codeStartIndex = cursor;
+
+        // 4. Buscar final del código (espacio o salto de línea)
+        // En tu lógica React usabas 'SPACE' como endMarker por defecto
+        let mainEndIndex = -1;
+        const match = textToProcess.slice(codeStartIndex).match(/[ \t\n]/); // Espacio, tab o enter
+        if (match) mainEndIndex = codeStartIndex + match.index;
+
+        // Validar caracteres de parada (stopChars)
+        let stopCharIndex = -1;
+        for (let i = codeStartIndex; i < textToProcess.length; i++) {
+          if (mainEndIndex !== -1 && i >= mainEndIndex) break;
+          if (stopChars.includes(textToProcess[i])) {
+            stopCharIndex = i;
+            break;
+          }
+        }
+
+        // Determinar índice final real
+        let codeEndIndex = -1;
+        if (mainEndIndex !== -1 && stopCharIndex !== -1) {
+          codeEndIndex = Math.min(mainEndIndex, stopCharIndex);
+        } else if (mainEndIndex !== -1) {
+          codeEndIndex = mainEndIndex;
+        } else if (stopCharIndex !== -1) {
+          codeEndIndex = stopCharIndex;
+        }
+
+        // Extraer si es válido
+        if (codeEndIndex !== -1 && codeEndIndex > codeStartIndex) {
+          let rawCode = textToProcess.substring(codeStartIndex, codeEndIndex);
+          // Limpieza final
+          let cleanCode = rawCode.trim();
+
+          // Filtro básico (mínimo 2 letras)
+          if (cleanCode.length > 1) {
+            foundCodes.push(cleanCode);
+          }
+          searchIndex = codeEndIndex;
+        } else {
+          // Fallback si no encontró final claro
+          searchIndex = bestStartIndex + bestTokenLength + 1;
+        }
+      }
+
+      // Retornar únicos
+      return [...new Set(foundCodes)];
     }
   </script>
 </body>
