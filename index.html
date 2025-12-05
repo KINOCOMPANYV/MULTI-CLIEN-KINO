@@ -187,6 +187,8 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      text-decoration: none;
+      /* Asegura que los enlaces parezcan botones */
     }
 
     .btn--primary {
@@ -231,6 +233,18 @@
 
     .btn--flex1 {
       flex: 1;
+    }
+
+    .btn--highlight {
+      background: #FCD34D;
+      /* Amarillo */
+      color: #78350F;
+      /* Marrón oscuro */
+      font-weight: bold;
+    }
+
+    .btn--highlight:hover {
+      background: #F59E0B;
     }
 
     @media (max-width: 1024px) {
@@ -278,7 +292,6 @@
 
 <body class="bg-gray-100 min-h-screen flex items-start justify-center p-6">
 
-  <!-- Login Modal -->
   <div id="loginOverlay" class="overlay">
     <div class="modal">
       <h2 class="text-xl font-semibold">Acceso Restringido</h2>
@@ -289,7 +302,6 @@
     </div>
   </div>
 
-  <!-- Confirm Modal -->
   <div id="confirmOverlay" class="overlay hidden">
     <div id="confirmBox" class="modal confirm">
       <p id="confirmMsg">¿Confirmar acción?</p>
@@ -298,7 +310,6 @@
     </div>
   </div>
 
-  <!-- Delete Key Modal -->
   <div id="deleteOverlay" class="overlay hidden">
     <div class="modal deleteKey">
       <h2 class="text-xl font-semibold">Clave de Eliminación</h2>
@@ -311,10 +322,8 @@
     </div>
   </div>
 
-  <!-- Toast container -->
   <div id="toast-container"></div>
 
-  <!-- Main Content -->
   <div id="mainContent" class="w-full max-w-4xl bg-white rounded-2xl shadow-lg hidden">
     <div class="bg-white border-b">
       <h1 class="text-2xl font-bold text-center py-4">KINO COMPANY SAS V1</h1>
@@ -329,7 +338,6 @@
     </nav>
     <div class="p-6 space-y-6">
 
-      <!-- TAB SEARCH -->
       <div id="tab-search" class="tab-content">
         <h2 class="text-xl font-semibold mb-4">Búsqueda Inteligente</h2>
         <textarea id="searchInput" rows="6" class="w-full border rounded px-3 py-2 text-lg mb-4"
@@ -342,7 +350,6 @@
         <div id="results-search" class="space-y-4"></div>
       </div>
 
-      <!-- TAB UPLOAD -->
       <div id="tab-upload" class="tab-content hidden">
         <h2 class="text-xl font-semibold mb-4">Subir / Editar Documento</h2>
         <form id="form-upload" enctype="multipart/form-data" class="space-y-4">
@@ -370,7 +377,6 @@
         </form>
       </div>
 
-      <!-- TAB LIST -->
       <div id="tab-list" class="tab-content hidden">
         <h2 class="text-xl font-semibold mb-4">Consultar Documentos</h2>
         <div class="flex gap-4 mb-4">
@@ -383,7 +389,6 @@
         <div id="results-list" class="space-y-4"></div>
       </div>
 
-      <!-- TAB CODE -->
       <div id="tab-code" class="tab-content hidden">
         <h2 class="text-xl font-semibold mb-4">Búsqueda por Código</h2>
         <div class="relative mb-4">
@@ -524,6 +529,18 @@
           ct.innerHTML = '<p class="text-gray-500">No hay documentos.</p>';
           return;
         }
+
+        // --- LÓGICA AGREGADA PARA OBTENER CÓDIGO ACTUAL ---
+        const activeTab = document.querySelector('.tab.active')?.dataset.tab;
+        let searchCode = '';
+        if (activeTab === 'tab-code') {
+          searchCode = document.getElementById('codeInput').value.trim();
+        } else if (activeTab === 'tab-search') {
+          const raw = document.getElementById('searchInput').value.trim();
+          searchCode = raw.split(/\s+/)[0] || '';
+        }
+        // --------------------------------------------------
+
         ct.innerHTML = items.map(d => `
           <div class="border rounded p-4 bg-gray-50">
             <div class="flex justify-between">
@@ -538,7 +555,16 @@
                   <button onclick="editDoc(${d.id})" class="btn btn--warning px-2 py-1 text-lg">Editar</button>
                   <button onclick="pendingDeleteId=${d.id}; document.getElementById('deleteOverlay').classList.remove('hidden'); document.getElementById('deleteKeyInput').focus();" class="btn btn--primary px-2 py-1 text-lg">Eliminar</button>
                 ` : ''}
+                
                 <button data-id="${d.id}" onclick="toggleCodes(this)" class="btn btn--secondary px-2 py-1 text-lg">Ver Códigos</button>
+                
+                ${searchCode ? `
+                <a href="bc/visor.html?file=../uploads/${d.path}&code=${encodeURIComponent(searchCode)}" target="_blank" 
+                   class="btn btn--highlight px-2 py-1 text-lg flex items-center justify-center gap-1">
+                   🖍️ Resaltar
+                </a>
+                ` : ''}
+
               </div>
             </div>
             <pre id="codes${d.id}" class="mt-2 p-2 bg-white rounded hidden">${(d.codes || []).join('\n')}</pre>
