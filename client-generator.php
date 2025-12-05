@@ -251,7 +251,7 @@ if ($action === 'create_empty' && $_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!is_dir($uploadsClient)) {
             mkdir($uploadsClient, 0777, true);
         }
-        
+
         // Crear un index.html vacío por seguridad para evitar listar directorios
         file_put_contents($uploadsClient . '/index.html', '');
 
@@ -266,6 +266,7 @@ $clients = [];
 try {
     $clients = $db->query("SELECT codigo, nombre, titulo_app, color_primario, color_secundario, activo, fecha_creacion FROM _control_clientes ORDER BY id DESC")->fetchAll(PDO::FETCH_ASSOC);
 } catch (Exception $e) {
+    die("❌ Error cargando clientes (Posible falta de columna en DB): " . $e->getMessage() . "<br><a href='add_title_column.php'>Click aquí para intentar corregir BD</a>");
 }
 ?>
 <!doctype html>
@@ -520,8 +521,9 @@ try {
                     <button type="submit" name="action" value="create" style="flex: 1;">
                         ✅ Clonar Todo (Datos Kino)
                     </button>
-                    
-                    <button type="submit" name="action" value="create_empty" style="flex: 1; background-color: #4b5563;">
+
+                    <button type="submit" name="action" value="create_empty"
+                        style="flex: 1; background-color: #4b5563;">
                         ✨ Crear Cliente Vacío
                     </button>
                 </div>
