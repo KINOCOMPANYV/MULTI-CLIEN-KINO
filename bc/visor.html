@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visor Inteligente</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <style>
+        .pdf-page-container {
+            position: relative;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            display: inline-block;
+        }
+
+        .textLayer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 1;
+            line-height: 1.0;
+        }
+
+        .textLayer>span {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            transform-origin: 0% 0%;
+        }
+
+        /* El resaltado */
+        .highlight {
+            background-color: #fde047;
+            color: transparent;
+            border-radius: 2px;
+            mix-blend-mode: multiply;
+            outline: 2px solid #eab308;
+            box-shadow: 0 0 5px rgba(234, 179, 8, 0.5);
+        }
+
+        /* Loader */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #ef4444;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen font-sans">
+
+    <div class="bg-white shadow-sm p-4 sticky top-0 z-50 flex justify-between items-center">
+        <div>
+            <h1 class="text-lg font-bold text-gray-800">Resultado de Búsqueda</h1>
+            <p class="text-xs text-gray-500" id="fileInfo">Cargando...</p>
+        </div>
+        <button onclick="window.close()"
+            class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded text-sm">Cerrar</button>
+    </div>
+
+    <div class="max-w-5xl mx-auto p-4">
+        <div id="statusArea" class="text-center py-10">
+            <div class="loader"></div>
+            <p id="statusText" class="text-gray-600 font-medium">Analizando documento...</p>
+            <p id="progressText" class="text-sm text-gray-400 mt-2">0%</p>
+        </div>
+
+        <div id="resultsArea" class="flex flex-col items-center gap-6"></div>
+    </div>
+
+    <script>
+        // Obtener parámetros de la URL
+        const params = new URLSearchParams(window.location.search);
+        const fileUrl = params.get('file'); // La ruta relativa al PDF
+        const searchCode = params.get('code'); // El código a buscar
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!fileUrl || !searchCode) {
+                showError("Faltan parámetros. Use: visor.html?file=ruta.pdf&code=CODIGO");
+                return;
+            }
+            document.getElementById('fileInfo').innerText = `Buscando: "${searchCode}" en documento.`;
+            procesarPDF(fileUrl, searchCode);
+        });
+
+        async function procesarPDF(url, query) {
+            const statusText = document.getElementById('statusText');
+            const progressText = document.getElementById('progressText');
+            const resultsArea = document.getElementById('resultsArea');
+            const statusArea = document.getElementById('statusArea');
+
+            try {
+                // Cargar el PDF como ArrayBuffer
+                const loadingTask = pdfjsLib.getDocument(url);
+                loadingTask.onProgress = (p) => {
+                    if (p.total > 0) {
+                        let percent = Math.round((p.loaded / p.total) * 100);
+                        statusText.innerText = "Descargando PDF...";
+                        progressText.innerText = percent + "%";
+                    }
+                };
+
+                const pdf = await loadingTask.promise;
+                const numPages = pdf.numPages;
+
+                let matches = [];
+                const queryNormalized = query.trim().replace(/\s+/g, '').toLowerCase();
+
+                // Escanear páginas
+                for (let i = 1; i <= numPages; i++) {
+                    statusText.innerText = `Escaneando página ${i} de ${numPages}...`;
+                    progressText.innerText = `${Math.round((i / numPages) * 100)}%`;
+
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageStrings = textContent.items.map(item => item.str);
+                    const pageTextNormalized = pageStrings.join('').replace(/\s+/g, '').toLowerCase();
+
+                    // Comprobación de coincidencia
+                    if (pageTextNormalized.includes(queryNormalized)) {
+                        matches.push({ pageNumber: i, pageObj: page, textContent: textContent });
+                    }
+                }
+
+                // Finalizar carga
+                statusArea.classList.add('hidden');
+
+                if (matches.length === 0) {
+                    showError(`No se encontró el código "${query}" en este documento (es posible que sea una imagen escaneada).`);
+                    // Opción: Mostrar botón para ver el PDF completo de todos modos
+                    const btn = document.createElement('a');
+                    btn.href = url;
+                    btn.className = "mt-4 bg-blue-600 text-white px-4 py-2 rounded inline-block";
+                    btn.innerText = "Ver PDF completo sin resaltar";
+                    resultsArea.appendChild(btn);
+                } else {
+                    // Renderizar solo páginas encontradas
+                    const summary = document.createElement('div');
+                    summary.className = "w-full max-w-2xl bg-green-50 text-green-800 p-3 rounded-lg border border-green-200 text-center font-medium mb-4";
+                    summary.innerText = `¡Encontrado! Mostrando ${matches.length} página(s) relevante(s).`;
+                    resultsArea.appendChild(summary);
+
+                    for (const match of matches) {
+                        await renderPage(match.pageObj, match.textContent, query, match.pageNumber, resultsArea);
+                    }
+                }
+
+            } catch (error) {
+                console.error(error);
+                showError("Error al procesar el PDF: " + error.message);
+            }
+        }
+
+        async function renderPage(page, textContent, query, pageNum, containerDom) {
+            const viewport = page.getViewport({ scale: 1.5 });
+
+            const card = document.createElement('div');
+            card.className = "bg-white p-2 rounded-lg shadow-sm border border-slate-200 inline-block";
+
+            const header = document.createElement('div');
+            header.className = "flex justify-between items-center mb-2 px-2";
+            header.innerHTML = `<span class="font-bold text-slate-700">Página ${pageNum}</span> <span class="text-xs text-white bg-green-500 px-2 py-1 rounded">Coincidencia</span>`;
+            card.appendChild(header);
+
+            const wrapper = document.createElement('div');
+            wrapper.className = "pdf-page-container";
+            wrapper.style.width = `${viewport.width}px`;
+            wrapper.style.height = `${viewport.height}px`;
+
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            const textLayer = document.createElement('div');
+            textLayer.className = "textLayer";
+            textLayer.style.setProperty('--scale-factor', viewport.scale);
+
+            wrapper.appendChild(canvas);
+            wrapper.appendChild(textLayer);
+            card.appendChild(wrapper);
+            containerDom.appendChild(card);
+
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+            await pdfjsLib.renderTextLayer({
+                textContentSource: textContent,
+                container: textLayer,
+                viewport: viewport,
+                textDivs: []
+            }).promise;
+
+            // Resaltado
+            const flexibleQuery = query.split('').map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*');
+            const regex = new RegExp(`(${flexibleQuery})`, 'gi');
+
+            textLayer.querySelectorAll('span').forEach(span => {
+                if (regex.test(span.textContent)) {
+                    span.innerHTML = span.textContent.replace(regex, '<span class="highlight">$1</span>');
+                }
+            });
+        }
+
+        function showError(msg) {
+            const statusArea = document.getElementById('statusArea');
+            statusArea.innerHTML = `<div class="text-red-600 font-bold mb-2">Error</div><p class="text-gray-700">${msg}</p>`;
+            statusArea.classList.remove('hidden');
+        }
+    </script>
+</body>
+
+</html>

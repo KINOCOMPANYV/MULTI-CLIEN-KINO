@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,7 +8,10 @@
   <title>Buscador – Solo Búsqueda por Código</title>
   <style>
     /* Mantener texto, estilos originales */
-    .relative { position: relative; }
+    .relative {
+      position: relative;
+    }
+
     #suggestions {
       position: absolute;
       top: 100%;
@@ -23,9 +27,13 @@
       display: none;
       z-index: 9999;
     }
-    #suggestions div:hover { background-color: #f3f4f6; }
+
+    #suggestions div:hover {
+      background-color: #f3f4f6;
+    }
   </style>
 </head>
+
 <body class="bg-gray-100 min-h-screen flex flex-col items-center justify-start p-4 sm:p-6">
   <div class="w-full max-w-3xl bg-white rounded-2xl shadow-lg overflow-visible">
 
@@ -36,7 +44,8 @@
         Estimados clientes y autoridades competentes:
       </p>
       <p class="text-gray-700 text-sm sm:text-base mb-4 leading-relaxed italic">
-        Hemos desarrollado esta aplicación para facilitar la consulta de las declaraciones de importación de nuestros productos.
+        Hemos desarrollado esta aplicación para facilitar la consulta de las declaraciones de importación de nuestros
+        productos.
       </p>
       <p class="text-gray-800 text-base sm:text-lg font-semibold mb-1">
         Modo de uso:
@@ -51,7 +60,8 @@
         La aplicación arrojará los documentos asociados a dicho código.
       </p>
       <p class="text-gray-700 text-sm sm:text-base leading-relaxed">
-        Haga clic en <span class="text-red-600 font-semibold">“VER PDF”</span> para visualizar, compartir o imprimir el documento.
+        Haga clic en <span class="text-red-600 font-semibold">“VER PDF”</span> para visualizar, compartir o imprimir el
+        documento.
       </p>
     </div>
 
@@ -61,18 +71,16 @@
         <h2 class="text-2xl sm:text-3xl font-semibold mb-4">Búsqueda por Código</h2>
         <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4">
           <div class="relative flex-1">
-            <input
-              id="codeInput"
-              type="text"
-              placeholder="Código a buscar"
-              class="w-full sm:flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-300"
-            />
+            <input id="codeInput" type="text" placeholder="Código a buscar"
+              class="w-full sm:flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-300" />
             <div id="suggestions"></div>
           </div>
-          <button id="btnCodeSearch" class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition text-center">
+          <button id="btnCodeSearch"
+            class="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition text-center">
             Buscar
           </button>
-          <button id="btnCodeClear" class="w-full sm:w-auto bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg transition text-center">
+          <button id="btnCodeClear"
+            class="w-full sm:w-auto bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg transition text-center">
             Limpiar
           </button>
         </div>
@@ -89,10 +97,12 @@
     <p class="mb-1">Estamos ubicados en Medellín – Bogotá – Panamá.</p>
     <p class="mb-1">
       Línea de Atención:
-      <a href="https://wa.me/573185640716" target="_blank" class="text-red-600 font-medium hover:underline">+57 318 5640716</a>
+      <a href="https://wa.me/573185640716" target="_blank" class="text-red-600 font-medium hover:underline">+57 318
+        5640716</a>
     </p>
     <p>
-      <a href="https://kinocompanysas.kyte.site/es" target="_blank" class="text-red-600 hover:underline">https://kinocompanysas.kyte.site/es</a>
+      <a href="https://kinocompanysas.kyte.site/es" target="_blank"
+        class="text-red-600 hover:underline">https://kinocompanysas.kyte.site/es</a>
     </p>
     <div class="mt-4">
       <button onclick="toggleLegalModal()" class="text-red-600 hover:underline font-medium">Aviso Legal</button>
@@ -102,11 +112,14 @@
   <!-- MODAL AVISO LEGAL -->
   <div id="legalModal" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center hidden">
     <div class="bg-white max-w-md w-full p-6 rounded-xl shadow-lg relative">
-      <button onclick="toggleLegalModal()" class="absolute top-2 right-3 text-gray-500 hover:text-red-600 text-xl">&times;</button>
+      <button onclick="toggleLegalModal()"
+        class="absolute top-2 right-3 text-gray-500 hover:text-red-600 text-xl">&times;</button>
       <h2 class="text-lg font-bold text-gray-800 mb-3">Aviso Legal</h2>
       <p class="text-sm text-gray-700 leading-relaxed">
-        Los documentos disponibles en esta plataforma son propiedad exclusiva de <strong>KINO COMPANY S.A.S</strong>. Están destinados únicamente al uso de sus clientes y de las autoridades competentes que los requieran.<br><br>
-        Cualquier uso indebido, reproducción no autorizada o distribución de este material será considerado una infracción legal y podrá ser sancionado conforme a la legislación vigente.
+        Los documentos disponibles en esta plataforma son propiedad exclusiva de <strong>KINO COMPANY S.A.S</strong>.
+        Están destinados únicamente al uso de sus clientes y de las autoridades competentes que los requieran.<br><br>
+        Cualquier uso indebido, reproducción no autorizada o distribución de este material será considerado una
+        infracción legal y podrá ser sancionado conforme a la legislación vigente.
       </p>
     </div>
   </div>
@@ -175,7 +188,27 @@
           results.innerHTML = '<p class="text-gray-500">No hay documentos para este código.</p>';
           return;
         }
-        results.innerHTML = items.map(d => `<div class="border rounded-lg p-4 bg-white shadow-sm"><h3 class="font-semibold text-lg truncate">${d.name}</h3><p class="text-sm text-gray-600 mt-1 truncate">${d.date}</p><p class="text-xs text-gray-500 italic mt-0.5 truncate">${d.path}</p><a href="../uploads/${d.path}" target="_blank" class="text-red-600 hover:underline mt-1 inline-block font-semibold">Ver PDF</a></div>`).join('');
+
+        // Obtenemos el código que el usuario escribió para pasarlo al resaltador
+        const currentSearchCode = document.getElementById('codeInput').value.trim();
+
+        results.innerHTML = items.map(d => `
+            <div class="border rounded-lg p-4 bg-white shadow-sm flex flex-col">
+                <h3 class="font-semibold text-lg truncate" title="${d.name}">${d.name}</h3>
+                <p class="text-sm text-gray-600 mt-1 truncate">${d.date}</p>
+                
+                <div class="mt-3 flex gap-2">
+                    <a href="../uploads/${d.path}" target="_blank" class="text-gray-500 hover:text-gray-700 text-sm border border-gray-300 px-3 py-1 rounded">
+                        Ver Original
+                    </a>
+                    
+                    <a href="visor.html?file=../uploads/${d.path}&code=${encodeURIComponent(currentSearchCode)}" target="_blank" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 px-4 py-1 rounded font-bold shadow-sm flex-1 text-center flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        Ver Código
+                    </a>
+                </div>
+            </div>
+        `).join('');
       }
 
       window.doCodeSearch = () => {
@@ -203,4 +236,5 @@
     function toggleLegalModal() { document.getElementById('legalModal').classList.toggle('hidden'); }
   </script>
 </body>
+
 </html>
