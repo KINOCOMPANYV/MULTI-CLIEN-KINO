@@ -121,8 +121,15 @@ if ($action === 'clone' && !empty($_POST['clone_from']) && !empty($_POST['clone_
         // Mapear IDs y clonar códigos
         // Esto es complejo si los nombres no son únicos. Asumimos nombres+fecha únicos por simplicidad o copiamos todo.
         // Mejor estrategia: Limpiar destino y copiar todo.
+        // Desactivar validación de FK temporalmente para permitir TRUNCATE
+        $db->exec("SET FOREIGN_KEY_CHECKS = 0");
+
+        // Limpiar destino (orden inverso por seguridad, aunque con el check=0 no importa)
         $db->exec("TRUNCATE TABLE `{$tableCodesTo}`");
         $db->exec("TRUNCATE TABLE `{$tableDocsTo}`");
+
+        // Reactivar validación
+        $db->exec("SET FOREIGN_KEY_CHECKS = 1");
 
         $db->exec("INSERT INTO `{$tableDocsTo}` (name, date, path, codigos_extraidos) 
                    SELECT name, date, path, codigos_extraidos 
