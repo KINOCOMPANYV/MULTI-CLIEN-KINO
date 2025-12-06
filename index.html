@@ -327,6 +327,34 @@
     </div>
   </div>
 
+  <!-- A. El Modal de Configuración (Agregado) -->
+  <div id="extractionSettingsModal" class="overlay hidden">
+    <div class="modal text-left" style="max-width: 450px;">
+      <h3 class="text-xl font-bold mb-2 text-gray-800">⚙️ Reglas de Extracción</h3>
+      <p class="text-sm text-gray-600 mb-4">Configura cómo encontrar los códigos en este documento.</p>
+
+      <div class="space-y-4 text-left">
+        <div>
+          <label class="block text-sm font-bold text-gray-700 mb-1">Buscar textos que empiecen por:</label>
+          <input id="setting-prefixes" type="text" value="Ref:, Factura:, Inv:, REF, Ref, Codigo:"
+            class="w-full border rounded px-3 py-2 text-sm bg-gray-50" placeholder="Ej: Ref:, Inv:, Cod:">
+          <p class="text-xs text-gray-400 mt-1">Separa las palabras clave con comas.</p>
+        </div>
+
+        <div class="flex items-center gap-2 mt-4">
+          <input id="setting-clean" type="checkbox" class="w-5 h-5 text-blue-600 rounded" checked>
+          <label for="setting-clean" class="text-sm text-gray-700">Limpiar caracteres extraños (./-)</label>
+        </div>
+      </div>
+
+      <div class="flex gap-3 mt-6">
+        <button onclick="cancelExtraction()" class="btn btn--secondary btn--flex1">Cancelar</button>
+        <button onclick="confirmExtraction()" class="btn btn--primary btn--flex1">🚀 Extraer Ahora</button>
+      </div>
+    </div>
+  </div>
+
+
   <div id="toast-container"></div>
 
   <div id="mainContent" class="w-full max-w-4xl bg-white rounded-2xl shadow-lg hidden">
@@ -406,6 +434,29 @@
             <p class="text-sm text-gray-500 mt-1 text-right" id="code-count">0 códigos</p>
           </div>
 
+          <!-- B. La Advertencia Visual (Agregado) -->
+          <div id="verify-warning"
+            class="hidden mt-6 mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded shadow-sm">
+            <div class="flex items-start">
+              <div class="flex-shrink-0">
+                <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-lg font-bold text-yellow-800">⚠️ VERIFICA LOS CÓDIGOS</h3>
+                <div class="mt-1 text-yellow-700 font-medium">
+                  <p>Por favor, revisa la lista de códigos de arriba y <strong>edítalos si es necesario</strong> antes
+                    de
+                    subir el documento.</p>
+                  <p class="text-sm mt-1">Asegúrate de borrar basura o agregar códigos que el sistema no haya detectado.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <button type="submit" class="btn btn--primary btn--full text-lg">Guardar Documento</button>
         </form>
       </div>
@@ -447,8 +498,10 @@
     const apiUrl = `${apiBase}?c=${encodeURIComponent(clientCode)}`;
     // const ACCESS_KEY = '565'; 
     // const DELETION_KEY = '0101';
+    // const DELETION_KEY = '0101';
     let fullList = [];
     let pendingDeleteId = null;
+    let pendingFile = null; // Variable temporal para guardar el archivo mientras configuramos
 
     // Cargar colores y TÍTULO del cliente
     (async function loadClientConfig() {
@@ -842,12 +895,41 @@
 
       // Si estamos en MODO AUTOMÁTICO y es un PDF
       if (currentUploadMode === 'auto' && file.type === 'application/pdf') {
-        await extractCodesFromPdf(file);
+        // 1. Guardamos el archivo temporalmente
+        pendingFile = file;
+        // 2. Abrimos el modal de configuración
+        document.getElementById('extractionSettingsModal').classList.remove('hidden');
       }
     }
 
-    // --- MOTOR DE EXTRACCIÓN (Traducción de tu código React) ---
-    async function extractCodesFromPdf(file) {
+    function cancelExtraction() {
+      document.getElementById('extractionSettingsModal').classList.add('hidden');
+      document.getElementById('file').value = ""; // Limpiar el input file
+      pendingFile = null;
+    }
+
+    async function confirmExtraction() {
+      if (!pendingFile) return;
+
+      // 1. Obtener reglas del modal
+      const prefixesRaw = document.getElementById('setting-prefixes').value;
+      const prefixes = prefixesRaw.split(',').map(s => s.trim()).filter(Boolean);
+      const cleanChars = document.getElementById('setting-clean').checked;
+
+      // 2. Cerrar modal
+      document.getElementById('extractionSettingsModal').classList.add('hidden');
+
+      // 3. Ejecutar extracción con reglas
+      await extractCodesFromPdf(pendingFile, prefixes, cleanChars);
+
+      // 4. Mostrar advertencia visual
+      document.getElementById('verify-warning').classList.remove('hidden');
+
+      pendingFile = null;
+    }
+
+    // --- MOTOR DE EXTRACCIÓN (Modificado) ---
+    async function extractCodesFromPdf(file, customPrefixes = [], doClean = true) {
       const statusDiv = document.getElementById('auto-extract-status');
       const codesArea = document.getElementById('codes');
       const countLabel = document.getElementById('code-count');
@@ -888,18 +970,21 @@
         }
 
         // 2. Ejecutar algoritmo de búsqueda
-        statusDiv.innerHTML = "⚙️ Procesando textos...";
-        const extractedCodes = runExtractionAlgorithm(fullText);
+        statusDiv.innerHTML = "⚙️ Filtrando códigos...";
+        const extractedCodes = runExtractionAlgorithm(fullText, customPrefixes, doClean);
 
         // 3. Mostrar resultados
         if (extractedCodes.length > 0) {
           codesArea.value = extractedCodes.join('\n');
-          statusDiv.innerHTML = `✅ ¡Éxito! Se encontraron ${extractedCodes.length} códigos.`;
+          statusDiv.innerHTML = `✅ ¡Listo! ${extractedCodes.length} códigos detectados según tus reglas.`;
           statusDiv.className = "mt-2 text-sm font-semibold text-green-600";
           countLabel.innerText = `${extractedCodes.length} códigos encontrados`;
+
+          // Hacer scroll hacia la advertencia para que la vean
+          document.getElementById('verify-warning').scrollIntoView({ behavior: 'smooth' });
         } else {
           codesArea.value = "";
-          statusDiv.innerHTML = "⚠️ No se encontraron códigos con los patrones (Ref:, Factura:, Inv:).";
+          statusDiv.innerHTML = "⚠️ No se encontraron códigos con los prefijos configurados.";
           statusDiv.className = "mt-2 text-sm font-semibold text-yellow-600";
         }
 
@@ -911,10 +996,12 @@
       }
     }
 
-    // Algoritmo de búsqueda puro (tu lógica 'extractCodes')
-    function runExtractionAlgorithm(originalText) {
-      // Configuración (Hardcoded por defecto, ajustable)
-      const startMarkers = ["Ref:", "Factura:", "Inv:", "REF", "Ref"]; // Tus marcadores
+    // Algoritmo de búsqueda puro (Modificado)
+    function runExtractionAlgorithm(originalText, customMarkers, doClean) {
+      // Usar marcadores del usuario o los por defecto
+      const defaultMarkers = ["Ref:", "Factura:", "Inv:", "REF", "Ref"];
+      const startMarkers = (customMarkers && customMarkers.length > 0) ? customMarkers : defaultMarkers;
+
       const stopChars = [".", ",", "/", "-"];
       const ignoreNewlines = true;
 
@@ -966,11 +1053,14 @@
 
         // Validar caracteres de parada (stopChars)
         let stopCharIndex = -1;
-        for (let i = codeStartIndex; i < textToProcess.length; i++) {
-          if (mainEndIndex !== -1 && i >= mainEndIndex) break;
-          if (stopChars.includes(textToProcess[i])) {
-            stopCharIndex = i;
-            break;
+        // Si la opción "Limpiar" está activa, usamos stopChars para cortar
+        if (doClean) {
+          for (let i = codeStartIndex; i < textToProcess.length; i++) {
+            if (mainEndIndex !== -1 && i >= mainEndIndex) break;
+            if (stopChars.includes(textToProcess[i])) {
+              stopCharIndex = i;
+              break;
+            }
           }
         }
 
@@ -989,6 +1079,9 @@
           let rawCode = textToProcess.substring(codeStartIndex, codeEndIndex);
           // Limpieza final
           let cleanCode = rawCode.trim();
+
+          // Eliminar puntos finales si quedaron
+          if (doClean) cleanCode = cleanCode.replace(/[.,;:]+$/, "");
 
           // Filtro básico (mínimo 2 letras)
           if (cleanCode.length > 1) {
