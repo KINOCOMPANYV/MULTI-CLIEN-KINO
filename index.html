@@ -8,6 +8,8 @@
     // Configurar worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   </script>
+  <!-- Paso 1: Agregar la librería Tesseract.js (OCR) -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script>
     // Interceptamos console.error
     (function () {
@@ -327,29 +329,48 @@
     </div>
   </div>
 
-  <!-- A. El Modal de Configuración (Agregado) -->
+  <!-- A. El Modal de Configuración (Actualizado) -->
   <div id="extractionSettingsModal" class="overlay hidden">
-    <div class="modal text-left" style="max-width: 450px;">
-      <h3 class="text-xl font-bold mb-2 text-gray-800">⚙️ Reglas de Extracción</h3>
-      <p class="text-sm text-gray-600 mb-4">Configura cómo encontrar los códigos en este documento.</p>
+    <div class="modal text-left" style="max-width: 400px;">
+      <h3 class="text-xl font-bold mb-2 text-gray-800">⚙️ Configurar Escaneo</h3>
+      <p class="text-sm text-gray-600 mb-4">Define cómo leeremos este documento o imagen.</p>
 
-      <div class="space-y-4 text-left">
+      <div class="space-y-4">
         <div>
-          <label class="block text-sm font-bold text-gray-700 mb-1">Buscar textos que empiecen por:</label>
+          <label class="block text-sm font-bold text-gray-700 mb-1">Buscar códigos que empiecen por:</label>
           <input id="setting-prefixes" type="text" value="Ref:, Factura:, Inv:, REF, Ref, Codigo:"
             class="w-full border rounded px-3 py-2 text-sm bg-gray-50" placeholder="Ej: Ref:, Inv:, Cod:">
-          <p class="text-xs text-gray-400 mt-1">Separa las palabras clave con comas.</p>
         </div>
 
-        <div class="flex items-center gap-2 mt-4">
-          <input id="setting-clean" type="checkbox" class="w-5 h-5 text-blue-600 rounded" checked>
-          <label for="setting-clean" class="text-sm text-gray-700">Limpiar caracteres extraños (./-)</label>
+        <div>
+          <label class="block text-sm font-bold text-gray-700 mb-1">El código termina cuando encuentra:</label>
+          <select id="setting-terminator" class="w-full border rounded px-3 py-2 text-sm bg-white">
+            <option value="space">Espacio o Salto de Línea (Estándar)</option>
+            <option value="/">Barra inclinada (/)</option>
+            <option value="-">Guión (-)</option>
+            <option value=".">Punto (.)</option>
+            <option value="custom">Otro carácter...</option>
+          </select>
+          <input id="setting-terminator-custom" type="text" class="w-full border rounded px-3 py-2 text-sm mt-2 hidden"
+            placeholder="Escribe el carácter" maxlength="1">
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input id="setting-join-hyphens" type="checkbox" class="w-4 h-4 text-blue-600 rounded" checked>
+            <span class="text-sm text-gray-700">Unir códigos cortados por línea (Ej: 123- \n 456)</span>
+          </label>
+
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input id="setting-ocr" type="checkbox" class="w-4 h-4 text-purple-600 rounded" checked disabled>
+            <span class="text-sm text-purple-800 font-medium">Modo Inteligente (PDF Text + OCR)</span>
+          </label>
         </div>
       </div>
 
       <div class="flex gap-3 mt-6">
-        <button onclick="cancelExtraction()" class="btn btn--secondary btn--flex1">Cancelar</button>
-        <button onclick="confirmExtraction()" class="btn btn--primary btn--flex1">🚀 Extraer Ahora</button>
+        <button onclick="cancelExtraction()" class="btn btn--secondary flex-1">Cancelar</button>
+        <button onclick="confirmExtraction()" class="btn btn--primary flex-1 shadow-lg">🚀 Escanear Ahora</button>
       </div>
     </div>
   </div>
@@ -885,7 +906,7 @@
       if (!file) return;
 
       // Validación de tamaño (existente)
-      const warning = document.getElementById('uploadWarning'); // Reutilizamos o usamos el warning original
+      const warning = document.getElementById('uploadWarning');
       if (file.size > 10 * 1024 * 1024) {
         warning.classList.remove('hidden');
         return;
@@ -893,12 +914,14 @@
         warning.classList.add('hidden');
       }
 
-      // Si estamos en MODO AUTOMÁTICO y es un PDF
-      if (currentUploadMode === 'auto' && file.type === 'application/pdf') {
-        // 1. Guardamos el archivo temporalmente
-        pendingFile = file;
-        // 2. Abrimos el modal de configuración
-        document.getElementById('extractionSettingsModal').classList.remove('hidden');
+      // Si estamos en MODO AUTOMÁTICO y es un PDF o IMAGEN
+      if (currentUploadMode === 'auto') {
+        if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
+          // 1. Guardamos el archivo temporalmente
+          pendingFile = file;
+          // 2. Abrimos el modal de configuración
+          document.getElementById('extractionSettingsModal').classList.remove('hidden');
+        }
       }
     }
 
@@ -908,123 +931,150 @@
       pendingFile = null;
     }
 
+    // --- LÓGICA DE EXTRACCIÓN MEJORADA ---
+
+    // 1. Manejo del Select de Terminador
+    document.getElementById('setting-terminator').addEventListener('change', function () {
+      const customInput = document.getElementById('setting-terminator-custom');
+      if (this.value === 'custom') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+      }
+    });
+
+    // 2. Función Principal al Confirmar
     async function confirmExtraction() {
       if (!pendingFile) return;
 
-      // 1. Obtener reglas del modal
+      // Obtener configuración del usuario
       const prefixesRaw = document.getElementById('setting-prefixes').value;
       const prefixes = prefixesRaw.split(',').map(s => s.trim()).filter(Boolean);
-      const cleanChars = document.getElementById('setting-clean').checked;
 
-      // 2. Cerrar modal
+      // Obtener terminador
+      let terminator = document.getElementById('setting-terminator').value;
+      if (terminator === 'space') terminator = null; // Null significa espacio/whitespace
+      if (terminator === 'custom') terminator = document.getElementById('setting-terminator-custom').value;
+
+      const joinHyphens = document.getElementById('setting-join-hyphens').checked;
+
+      // Cerrar modal
       document.getElementById('extractionSettingsModal').classList.add('hidden');
 
-      // 3. Ejecutar extracción con reglas
-      await extractCodesFromPdf(pendingFile, prefixes, cleanChars);
+      // MOSTRAR MENSAJE DE ESPERA
+      const statusDiv = document.getElementById('auto-extract-status');
+      statusDiv.classList.remove('hidden');
+      statusDiv.innerHTML = `
+            <div class="flex items-center gap-2 text-blue-700 animate-pulse">
+                <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                <strong>Espera un momento, estamos escaneando tu documento...</strong>
+            </div>`;
 
-      // 4. Mostrar advertencia visual
-      document.getElementById('verify-warning').classList.remove('hidden');
+      document.getElementById('codes').value = "Analizando píxeles y textos...\nPor favor espera...";
+
+      try {
+        let fullText = "";
+
+        // A) SI ES IMAGEN (JPG, PNG, ETC) -> USAR OCR
+        if (pendingFile.type.startsWith('image/')) {
+          fullText = await processImageWithOCR(pendingFile);
+        }
+        // B) SI ES PDF -> USAR LECTOR PDF
+        else if (pendingFile.type === 'application/pdf') {
+          fullText = await processPdfText(pendingFile);
+        }
+
+        // Ejecutar el algoritmo con el texto obtenido
+        const extractedCodes = runAdvancedExtraction(fullText, prefixes, terminator, joinHyphens);
+
+        // Mostrar resultados
+        displayResults(extractedCodes);
+
+      } catch (error) {
+        console.error(error);
+        statusDiv.innerHTML = `<span class="text-red-600">❌ Error: ${error.message}</span>`;
+        document.getElementById('codes').value = "Error al leer el archivo.";
+      }
 
       pendingFile = null;
     }
 
-    // --- MOTOR DE EXTRACCIÓN (Modificado) ---
-    async function extractCodesFromPdf(file, customPrefixes = [], doClean = true) {
-      const statusDiv = document.getElementById('auto-extract-status');
-      const codesArea = document.getElementById('codes');
-      const countLabel = document.getElementById('code-count');
-
-      try {
-        statusDiv.classList.remove('hidden');
-        statusDiv.innerHTML = "⏳ Leyendo PDF...";
-        codesArea.value = "Leyendo archivo...";
-
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-
-        let fullText = "";
-
-        // 1. Leer todas las páginas
-        for (let i = 1; i <= pdf.numPages; i++) {
-          statusDiv.innerHTML = `⏳ Analizando página ${i} de ${pdf.numPages}...`;
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-
-          // Lógica de detección de líneas (tu lógica de 'lastY')
-          let pageText = "";
-          let lastY = -1;
-
-          for (const item of textContent.items) {
-            // Si la diferencia vertical es grande, es nueva línea
-            if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 10) {
-              pageText += "\n";
-            } else if (pageText.length > 0 && !pageText.endsWith("\n") && !pageText.endsWith(" ") && item.str.trim().length > 0) {
-              // Agregar espacio si no es inicio de línea
-              if (!item.str.startsWith(" ")) pageText += " ";
-            }
-
-            pageText += item.str;
-            lastY = item.transform[5];
-          }
-          fullText += pageText + "\n";
-        }
-
-        // 2. Ejecutar algoritmo de búsqueda
-        statusDiv.innerHTML = "⚙️ Filtrando códigos...";
-        const extractedCodes = runExtractionAlgorithm(fullText, customPrefixes, doClean);
-
-        // 3. Mostrar resultados
-        if (extractedCodes.length > 0) {
-          codesArea.value = extractedCodes.join('\n');
-          statusDiv.innerHTML = `✅ ¡Listo! ${extractedCodes.length} códigos detectados según tus reglas.`;
-          statusDiv.className = "mt-2 text-sm font-semibold text-green-600";
-          countLabel.innerText = `${extractedCodes.length} códigos encontrados`;
-
-          // Hacer scroll hacia la advertencia para que la vean
-          document.getElementById('verify-warning').scrollIntoView({ behavior: 'smooth' });
-        } else {
-          codesArea.value = "";
-          statusDiv.innerHTML = "⚠️ No se encontraron códigos con los prefijos configurados.";
-          statusDiv.className = "mt-2 text-sm font-semibold text-yellow-600";
-        }
-
-      } catch (e) {
-        console.error(e);
-        statusDiv.innerHTML = "❌ Error al leer el PDF: " + e.message;
-        statusDiv.className = "mt-2 text-sm font-semibold text-red-600";
-        codesArea.value = "";
-      }
+    // 3. Procesador de Imágenes con Tesseract (OCR)
+    async function processImageWithOCR(file) {
+      // Usamos Tesseract.js desde el CDN
+      const worker = await Tesseract.createWorker('eng'); // 'eng' suele leer mejor letras y números universales
+      const ret = await worker.recognize(file);
+      await worker.terminate();
+      return ret.data.text;
     }
 
-    // Algoritmo de búsqueda puro (Modificado)
-    function runExtractionAlgorithm(originalText, customMarkers, doClean) {
-      // Usar marcadores del usuario o los por defecto
-      const defaultMarkers = ["Ref:", "Factura:", "Inv:", "REF", "Ref"];
-      const startMarkers = (customMarkers && customMarkers.length > 0) ? customMarkers : defaultMarkers;
+    // 4. Procesador de PDF (Tu lógica existente, encapsulada)
+    async function processPdfText(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+      let fullText = "";
 
-      const stopChars = [".", ",", "/", "-"];
-      const ignoreNewlines = true;
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        let pageText = "";
+        let lastY = -1;
 
-      // Pre-proceso: Limpiar saltos de línea raros si se solicita
-      let textToProcess = originalText;
-      if (ignoreNewlines) {
-        textToProcess = textToProcess.replace(/ *[\r\n]+ */g, "\n");
+        for (const item of textContent.items) {
+          // Detección básica de saltos de línea visuales
+          if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 10) {
+            pageText += "\n";
+          } else if (pageText.length > 0 && !pageText.endsWith("\n") && !pageText.endsWith(" ") && item.str.trim().length > 0) {
+            if (!item.str.startsWith(" ")) pageText += " ";
+          }
+          pageText += item.str;
+          lastY = item.transform[5];
+        }
+        fullText += pageText + "\n";
+      }
+      return fullText;
+    }
+
+    // 5. Algoritmo Avanzado de Extracción
+    function runAdvancedExtraction(text, markers, stopChar, joinHyphens) {
+      let processedText = text;
+
+      // --- REGLA: NO PARTIR CÓDIGOS CON GUIONES EN SALTOS DE LÍNEA ---
+      // Si el usuario marcó la opción, unimos "COD- \n IGO" en "COD-IGO"
+      if (joinHyphens) {
+        // Regex: Busca guión seguido opcionalmente de espacios y luego un salto de línea
+        // Lo reemplaza solo por el guión, eliminando el salto.
+        processedText = processedText.replace(/-\s*[\r\n]+\s*/g, "-");
+      }
+
+      // Normalizar saltos de línea a espacios para búsqueda continua
+      // (Opcional: depende si quieres que el salto de línea sea un terminador)
+      if (!stopChar) { // Si el terminador es espacio/enter, normalizamos enters a espacios
+        processedText = processedText.replace(/[\r\n]+/g, " ");
       }
 
       const foundCodes = [];
-      const lowerText = textToProcess.toLowerCase();
+      const lowerText = processedText.toLowerCase();
+
+      // Lista de caracteres de parada por defecto (si no eligió uno específico)
+      const defaultStopChars = [" ", "\t", "\n", ",", ";"];
+      if (stopChar) {
+        // Si eligió uno (ej: '/'), solo paramos en ese
+        // Nota: Agregamos \n por seguridad para no leer todo el documento
+        defaultStopChars.length = 0;
+        defaultStopChars.push(stopChar, "\n");
+      }
 
       let searchIndex = 0;
 
-      while (searchIndex < textToProcess.length) {
-        // 1. Encontrar mejor marcador de inicio
+      while (searchIndex < processedText.length) {
         let bestStartIndex = -1;
         let bestTokenLength = 0;
 
-        for (const token of startMarkers) {
-          const tokenLower = token.toLowerCase();
-          const idx = lowerText.indexOf(tokenLower, searchIndex);
-
+        // 1. Buscar marcador (Ref:, etc)
+        for (const token of markers) {
+          const idx = lowerText.indexOf(token.toLowerCase(), searchIndex);
           if (idx !== -1) {
             if (bestStartIndex === -1 || idx < bestStartIndex) {
               bestStartIndex = idx;
@@ -1033,69 +1083,77 @@
           }
         }
 
-        if (bestStartIndex === -1) break; // No hay más códigos
+        if (bestStartIndex === -1) break;
 
-        // 2. Posicionar cursor después del marcador
+        // 2. Mover cursor al final del marcador y saltar espacios vacíos
         let cursor = bestStartIndex + bestTokenLength;
-
-        // 3. Saltar espacios y saltos de línea hasta encontrar el valor
-        while (cursor < textToProcess.length && /\s/.test(textToProcess[cursor])) {
+        while (cursor < processedText.length && /\s/.test(processedText[cursor])) {
           cursor++;
         }
 
-        const codeStartIndex = cursor;
+        const codeStart = cursor;
+        let codeEnd = -1;
 
-        // 4. Buscar final del código (espacio o salto de línea)
-        // En tu lógica React usabas 'SPACE' como endMarker por defecto
-        let mainEndIndex = -1;
-        const match = textToProcess.slice(codeStartIndex).match(/[ \t\n]/); // Espacio, tab o enter
-        if (match) mainEndIndex = codeStartIndex + match.index;
+        // 3. Buscar el carácter de cierre
+        for (let i = codeStart; i < processedText.length; i++) {
+          const char = processedText[i];
 
-        // Validar caracteres de parada (stopChars)
-        let stopCharIndex = -1;
-        // Si la opción "Limpiar" está activa, usamos stopChars para cortar
-        if (doClean) {
-          for (let i = codeStartIndex; i < textToProcess.length; i++) {
-            if (mainEndIndex !== -1 && i >= mainEndIndex) break;
-            if (stopChars.includes(textToProcess[i])) {
-              stopCharIndex = i;
+          if (stopChar) {
+            // Modo estricto: solo parar en el caracter elegido
+            if (char === stopChar || char === '\n') {
+              codeEnd = i;
+              break;
+            }
+          } else {
+            // Modo estándar: parar en espacios o caracteres de puntuación raros
+            // PERMITIR GUIONES (-) DENTRO DEL CÓDIGO
+            if (defaultStopChars.includes(char)) {
+              codeEnd = i;
               break;
             }
           }
         }
 
-        // Determinar índice final real
-        let codeEndIndex = -1;
-        if (mainEndIndex !== -1 && stopCharIndex !== -1) {
-          codeEndIndex = Math.min(mainEndIndex, stopCharIndex);
-        } else if (mainEndIndex !== -1) {
-          codeEndIndex = mainEndIndex;
-        } else if (stopCharIndex !== -1) {
-          codeEndIndex = stopCharIndex;
-        }
+        if (codeEnd === -1) codeEnd = processedText.length;
 
-        // Extraer si es válido
-        if (codeEndIndex !== -1 && codeEndIndex > codeStartIndex) {
-          let rawCode = textToProcess.substring(codeStartIndex, codeEndIndex);
-          // Limpieza final
-          let cleanCode = rawCode.trim();
+        // 4. Extraer y validar
+        if (codeEnd > codeStart) {
+          let rawCode = processedText.substring(codeStart, codeEnd).trim();
+          // Limpieza final de puntos o comas al final si quedaron pegados
+          rawCode = rawCode.replace(/[.,;]+$/, "");
 
-          // Eliminar puntos finales si quedaron
-          if (doClean) cleanCode = cleanCode.replace(/[.,;:]+$/, "");
-
-          // Filtro básico (mínimo 2 letras)
-          if (cleanCode.length > 1) {
-            foundCodes.push(cleanCode);
+          if (rawCode.length > 1) {
+            foundCodes.push(rawCode);
           }
-          searchIndex = codeEndIndex;
+          searchIndex = codeEnd;
         } else {
-          // Fallback si no encontró final claro
-          searchIndex = bestStartIndex + bestTokenLength + 1;
+          searchIndex = cursor + 1;
         }
       }
 
-      // Retornar únicos
       return [...new Set(foundCodes)];
+    }
+
+    // 6. Mostrar Resultados
+    function displayResults(codes) {
+      const statusDiv = document.getElementById('auto-extract-status');
+      const codesArea = document.getElementById('codes');
+      const countLabel = document.getElementById('code-count');
+
+      if (codes.length > 0) {
+        codesArea.value = codes.join('\n');
+        statusDiv.innerHTML = `✅ ¡Éxito! Procesado completado. ${codes.length} códigos encontrados.`;
+        statusDiv.className = "mt-2 text-sm font-semibold text-green-600";
+        countLabel.innerText = `${codes.length} códigos`;
+
+        // Mostrar advertencia amarilla
+        document.getElementById('verify-warning').classList.remove('hidden');
+        document.getElementById('verify-warning').scrollIntoView({ behavior: 'smooth' });
+      } else {
+        codesArea.value = "";
+        statusDiv.innerHTML = "⚠️ No se encontraron códigos. Intenta ajustar los prefijos en la configuración.";
+        statusDiv.className = "mt-2 text-sm font-semibold text-yellow-600";
+      }
     }
   </script>
 </body>
