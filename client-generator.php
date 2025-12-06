@@ -537,6 +537,13 @@ try {
             </form>
         </div>
 
+        <!-- Herramientas -->
+        <div class="card">
+            <h2>🛠️ Utiles Globales</h2>
+            <button onclick="openExtractionModal()" style="background: #8b5cf6;">🚀 Abrir Extractor de Códigos
+                PDF</button>
+        </div>
+
         <!-- Lista de Clientes -->
         <div class="card">
             <h2>📋 Clientes Registrados</h2>
@@ -667,7 +674,365 @@ try {
         function closeModal(id) {
             document.getElementById(id).classList.remove('active');
         }
+
+        // --- FUNCIONES DEL EXTRACTOR ---
+        function openExtractionModal() {
+            document.getElementById('extractionModal').style.display = 'flex';
+        }
+
+        function closeExtractionModal() {
+            document.getElementById('extractionModal').style.display = 'none';
+        }
+
+        async function startExtraction() {
+            const btn = document.querySelector('.btn-confirm');
+            btn.innerHTML = '⏳ Procesando...';
+            btn.disabled = true;
+
+            const formData = new FormData(document.getElementById('extractionRulesForm'));
+            const params = new URLSearchParams(formData);
+
+            try {
+                const response = await fetch('pdf-search.php?' + params.toString(), {
+                    method: 'GET'
+                });
+
+                if (!response.ok) throw new Error("Error en la respuesta del servidor");
+
+                const text = await response.text();
+
+                closeExtractionModal();
+                showVerificationArea(text);
+
+            } catch (error) {
+                alert("Error al extraer: " + error.message);
+            } finally {
+                btn.innerHTML = '🚀 Extraer Códigos';
+                btn.disabled = false;
+            }
+        }
+
+        function showVerificationArea(content) {
+            const area = document.getElementById('verificationArea');
+            const textarea = document.getElementById('extractedCodesArea');
+
+            area.style.display = 'block';
+            textarea.value = content.trim();
+
+            updateCount();
+            textarea.addEventListener('input', updateCount);
+            area.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function updateCount() {
+            const lines = document.getElementById('extractedCodesArea').value.split('\n').filter(l => l.trim() !== '');
+            document.getElementById('codeCount').innerText = lines.length;
+        }
+
+        function processCodes() {
+            const finalCodes = document.getElementById('extractedCodesArea').value;
+
+            if (!finalCodes.trim()) {
+                alert("⚠️ No hay códigos para procesar.");
+                return;
+            }
+
+            if (confirm("¿Has verificado que los códigos están correctos?\nSe procederá a asignarlos.")) {
+                console.log("Enviando códigos:", finalCodes);
+                alert("Códigos listos para ser procesados (Lógica de guardado pendiente de tu sistema)");
+            }
+        }
+        function copyToClipboard() {
+            const copyText = document.getElementById("extractedCodesArea");
+            copyText.select();
+            copyText.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(copyText.value);
+            alert("Códigos copiados al portapapeles");
+        }
+
     </script>
+
+    <!-- MODAL DE EXTRACCIÓN -->
+    <div id="extractionModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>⚙️ Configuración de Extracción</h3>
+                <button onclick="closeExtractionModal()" class="close-btn">&times;</button>
+            </div>
+            <p class="modal-desc">Define cómo quieres que el sistema busque los códigos en el PDF.</p>
+
+            <form id="extractionRulesForm">
+                <div class="rule-group">
+                    <label class="switch-container">
+                        <input type="checkbox" name="use_ocr" value="1">
+                        <span class="checkmark"></span>
+                        <div class="text-data">
+                            <span class="title">Forzar OCR (Lento)</span>
+                            <span class="subtitle">Úsalo si el PDF es una imagen o escaneado.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="rule-group">
+                    <label class="switch-container">
+                        <input type="checkbox" name="strict_mode" value="1" checked>
+                        <span class="checkmark"></span>
+                        <div class="text-data">
+                            <span class="title">Modo Estricto</span>
+                            <span class="subtitle">Solo códigos que cumplan formato exacto (Ej: 0320...).</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="rule-group">
+                    <label class="switch-container">
+                        <input type="checkbox" name="clean_images" value="1" checked>
+                        <span class="checkmark"></span>
+                        <div class="text-data">
+                            <span class="title">Ignorar Imágenes Pequeñas</span>
+                            <span class="subtitle">Descarta logotipos o iconos basura.</span>
+                        </div>
+                    </label>
+                </div>
+            </form>
+
+            <div class="modal-buttons">
+                <button onclick="closeExtractionModal()" class="btn-cancel">Cancelar</button>
+                <button onclick="startExtraction()" class="btn-confirm">
+                    🚀 Extraer Códigos
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ÁREA DE VERIFICACIÓN -->
+    <div id="verificationArea" style="display: none;" class="verification-container container card">
+        <div class="warning-box">
+            <div class="warning-icon">⚠️</div>
+            <div class="warning-content">
+                <h4>¡VERIFICACIÓN REQUERIDA!</h4>
+                <p>Por favor, <strong>revisa los códigos extraídos</strong> en la lista de abajo. Puedes editarlos,
+                    borrar basura o agregar faltantes manualmente antes de continuar.</p>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>Códigos Detectados (Editables):</label>
+            <textarea id="extractedCodesArea" rows="10" class="code-editor"></textarea>
+            <div class="count-info">Total líneas: <span id="codeCount">0</span></div>
+        </div>
+
+        <div class="action-buttons">
+            <button onclick="copyToClipboard()" class="btn-secondary">📋 Copiar</button>
+            <button onclick="processCodes()" class="btn-success">✅ Confirmar y Asignar</button>
+        </div>
+    </div>
+
+    <style>
+        /* Estilos Integrados del Extractor */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 2000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(2px);
+        }
+
+        /* Conflict resolution: modal-content is already defined in existing CSS but we can override or reuse */
+        #extractionModal .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            font-family: sans-serif;
+            color: #333;
+            /* Override dark theme text for this modal if it's white bg */
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .rule-group {
+            margin-bottom: 15px;
+            border: 1px solid #eee;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .switch-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .text-data {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .text-data .title {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .text-data .subtitle {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-confirm {
+            background: #2563eb;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-confirm:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-cancel {
+            background: #e5e7eb;
+            color: #374151;
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Área de Verificación */
+        .verification-container {
+            margin-top: 30px;
+            border-top: 2px dashed #ccc;
+            padding-top: 20px;
+            animation: slideDown 0.5s ease;
+            background: #ffffff;
+            /* Explicit white background if needed */
+            color: #333;
+        }
+
+        /* Dark mode adjustment for verification container within the existing dark theme */
+        body .verification-container {
+            background: #111a2b;
+            /* Match card bg */
+            color: #e8eefc;
+            border-top: 2px dashed #2a3550;
+        }
+
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 6px solid #ffc107;
+            padding: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            color: #856404;
+            /* Keep warning text readable */
+        }
+
+        .warning-icon {
+            font-size: 2em;
+        }
+
+        .warning-content h4 {
+            margin: 0 0 5px 0;
+            color: #856404;
+            font-weight: bold;
+        }
+
+        .warning-content p {
+            color: #856404;
+        }
+
+        .code-editor {
+            width: 100%;
+            padding: 15px;
+            font-family: monospace;
+            font-size: 14px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #f8fafc;
+            color: #334155;
+            resize: vertical;
+        }
+
+        .code-editor:focus {
+            border-color: #2563eb;
+            outline: none;
+            background: white;
+        }
+
+        .btn-success {
+            background: #16a34a;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-success:hover {
+            background: #15803d;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-secondary {
+            background: #64748b;
+            color: white;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </body>
 
 </html>

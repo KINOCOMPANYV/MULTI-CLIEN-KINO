@@ -1,18 +1,38 @@
 <?php
+// pdf-search.php
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
-header('Content-Type: application/json; charset=UTF-8');
-$code = $_GET['code'] ?? '';
-if ($code === '') {
-    http_response_code(400);
-    echo json_encode(["error" => "Falta parámetro 'code'"], JSON_UNESCAPED_UNICODE);
-    exit;
+header('Content-Type: text/plain; charset=UTF-8'); // Cambiado a text/plain para llenar el textarea directo
+
+// Recibimos parámetros
+$code = $_GET['code'] ?? ''; // Mantener compatibilidad si se usa búsqueda simple
+$useOCR = isset($_GET['use_ocr']) ? '--ocr' : '';
+$strict = isset($_GET['strict_mode']) ? '--strict' : '';
+
+// Construir comando
+// NOTA: Asegúrate de que tu pdf_search.py acepte estos argumentos
+$command = "python3 " . __DIR__ . "/pdf_search.py ";
+
+if ($code !== '') {
+    $command .= escapeshellarg($code) . " ";
 }
-$esc = escapeshellarg($code);
-exec("python3 " . __DIR__ . "/pdf_search.py $esc 2>&1", $out, $ret);
+
+// Agregar flags de reglas
+if ($useOCR)
+    $command .= "--ocr ";
+if ($strict)
+    $command .= "--strict ";
+
+$command .= " 2>&1";
+
+exec($command, $out, $ret);
+
 if ($ret !== 0) {
     http_response_code(500);
-    echo json_encode(["error" => "Error ejecutando Python", "details" => $out], JSON_UNESCAPED_UNICODE);
+    echo "Error ejecutando extracción:\n" . implode("\n", $out);
     exit;
 }
+
+// Devolver salida limpia
 echo implode("\n", $out);
+?>
