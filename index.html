@@ -2,23 +2,16 @@
 <html lang="es">
 
 <head>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
-    // Configurar worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   </script>
-  <!-- Paso 1: Agregar la librería Tesseract.js (OCR) -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script>
-    // Interceptamos console.error
     (function () {
       const orig = console.error;
       console.error = function (...args) {
-        // Si es nuestro "Expected number" de SVG, lo ignoramos
-        if (args[0] && typeof args[0] === 'string' && args[0].includes('Expected number')) {
-          return;
-        }
+        if (args[0] && typeof args[0] === 'string' && args[0].includes('Expected number')) return;
         orig.apply(console, args);
       };
       window.onerror = function () { return true; };
@@ -29,209 +22,232 @@
   <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
   <title>Buscador de Documentos</title>
+
   <style>
-    .overlay {
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --color-primary: #6366f1;
+      --color-primary-dark: #4f46e5;
+      --color-secondary: #1e293b;
+      --color-accent: #06b6d4;
+      --color-success: #10b981;
+      --color-warning: #f59e0b;
+      --color-danger: #ef4444;
+      --glass-bg: rgba(255, 255, 255, 0.08);
+      --glass-border: rgba(255, 255, 255, 0.12);
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      --gradient-dark: linear-gradient(180deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+      --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.3);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--gradient-dark);
+      min-height: 100vh;
+      color: var(--text-primary);
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: '';
       position: fixed;
       top: 0;
       left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.6);
+      width: 100%;
+      height: 100%;
+      background:
+        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app-container {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    /* OVERLAY STYLES */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(12px);
       display: flex;
       align-items: center;
       justify-content: center;
       z-index: 9999;
+      animation: fadeIn 0.3s ease;
     }
 
     .overlay.hidden {
       display: none;
     }
 
-    .modal {
-      background: white;
-      border-radius: 0.5rem;
-      max-width: 320px;
-      width: 90%;
-      padding: 1.5rem;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-      text-align: center;
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+
+      to {
+        opacity: 1;
+      }
     }
 
-    .modal input,
-    .modal button {
-      font-size: 1rem;
+    /* MODAL GLASS */
+    .modal {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      max-width: 400px;
+      width: 90%;
+      padding: 2.5rem;
+      box-shadow: var(--shadow-glow), 0 25px 50px rgba(0, 0, 0, 0.5);
+      animation: slideUp 0.4s ease;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(30px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: var(--gradient-3);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .modal p {
+      color: var(--text-secondary);
+      margin-bottom: 1.5rem;
     }
 
     .modal input {
       width: 100%;
-      padding: 0.5rem;
-      margin-top: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 0.25rem;
-    }
-
-    .modal button {
-      margin-top: 1rem;
-    }
-
-    #toast-container {
-      position: fixed;
-      top: 1rem;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      z-index: 10000;
-    }
-
-    .toast {
-      min-width: 240px;
-      max-width: 480px;
-      background-color: var(--color-primary);
-      color: white;
-      padding: 1rem 1.5rem;
-      border-radius: 0.375rem;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 1.125rem;
-    }
-
-    .toast button {
-      background: transparent;
-      border: none;
-      color: white;
-      font-weight: bold;
-      margin-left: 1rem;
-      cursor: pointer;
-      font-size: 1.125rem;
-    }
-
-    #confirmOverlay,
-    #deleteOverlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: rgba(0, 0, 0, 0.6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10001;
-    }
-
-    #confirmOverlay.hidden,
-    #deleteOverlay.hidden {
-      display: none;
-    }
-
-    .modal.confirm,
-    .modal.deleteKey {
-      background: white;
-      border-radius: 0.5rem;
-      padding: 1.5rem;
-      max-width: 320px;
-      width: 90%;
-      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-      text-align: center;
-    }
-
-    .modal.confirm p {
-      margin-bottom: 1rem;
-    }
-
-    .modal.confirm button,
-    .modal.deleteKey button {
-      margin: 0.5rem;
-      padding: 0.5rem 1rem;
+      padding: 1rem 1.25rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      color: var(--text-primary);
       font-size: 1rem;
-      border-radius: 0.25rem;
+      transition: var(--transition);
+      outline: none;
     }
 
-    .tab.active {
-      border-bottom: 2px solid #F87171;
-      color: #F87171;
+    .modal input:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
     }
 
-    .button-group {
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      gap: 5px;
+    .modal input::placeholder {
+      color: var(--text-secondary);
     }
 
-    :root {
-      --btn-padding: 0.5rem 1rem;
-      --btn-radius: 0.375rem;
-      --btn-font-size: 1rem;
-      --btn-transition: background-color .2s;
-      --color-primary-btn: var(--color-secondary);
-      --color-primary-hover: #DC2626;
-      --color-secondary: #D1D5DB;
-      --color-secondary-hover: #9CA3AF;
-      --color-dark: #374151;
-      --color-dark-hover: #1F2937;
-      --color-warning: #8B5E5E;
-      --color-warning-hover: #6B4542;
-      --color-on-light: #1F2937;
-      --color-on-dark: #FFFFFF;
-    }
-
+    /* BUTTONS */
     .btn {
-      padding: var(--btn-padding);
-      border-radius: var(--btn-radius);
-      font-size: var(--btn-font-size);
-      transition: var(--btn-transition);
+      padding: 0.875rem 1.5rem;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
       border: none;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      gap: 0.5rem;
+      transition: var(--transition);
       text-decoration: none;
-      /* Asegura que los enlaces parezcan botones */
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.5s;
+    }
+
+    .btn:hover::before {
+      transform: translateX(100%);
     }
 
     .btn--primary {
-      background: var(--color-primary);
-      color: var(--color-on-dark);
+      background: var(--gradient-1);
+      color: white;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
     }
 
     .btn--primary:hover {
-      background: var(--color-primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
     }
 
     .btn--secondary {
-      background: var(--color-secondary);
-      color: var(--color-on-light);
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
+      border: 1px solid var(--glass-border);
     }
 
     .btn--secondary:hover {
-      background: var(--color-secondary-hover);
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.25);
     }
 
-    .btn--dark {
-      background: var(--color-dark);
-      color: var(--color-on-dark);
+    .btn--accent {
+      background: var(--gradient-3);
+      color: #0f172a;
     }
 
-    .btn--dark:hover {
-      background: var(--color-dark-hover);
+    .btn--danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
     }
 
     .btn--warning {
-      background: var(--color-warning);
-      color: var(--color-on-dark);
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: #0f172a;
     }
 
-    .btn--warning:hover {
-      background: var(--color-warning-hover);
+    .btn--highlight {
+      background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
+      color: #78350f;
+      font-weight: 700;
     }
 
     .btn--full {
@@ -242,341 +258,838 @@
       flex: 1;
     }
 
-    .btn--highlight {
-      background: #FCD34D;
-      /* Amarillo */
-      color: #78350F;
-      /* Marrón oscuro */
-      font-weight: bold;
+    /* MAIN CARD */
+    .main-card {
+      width: 100%;
+      max-width: 1000px;
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 32px;
+      overflow: hidden;
+      box-shadow: var(--shadow-glow), 0 25px 80px rgba(0, 0, 0, 0.4);
+      animation: cardEntrance 0.6s ease;
     }
 
-    .btn--highlight:hover {
-      background: #F59E0B;
-    }
+    @keyframes cardEntrance {
+      from {
+        transform: scale(0.95);
+        opacity: 0;
+      }
 
-    @media (max-width: 1024px) {
-      .max-w-4xl {
-        max-width: 90%;
+      to {
+        transform: scale(1);
+        opacity: 1;
       }
     }
 
+    .main-card.hidden {
+      display: none;
+    }
+
+    /* HEADER */
+    .app-header {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(6, 182, 212, 0.1) 100%);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 1.5rem 2rem;
+      text-align: center;
+    }
+
+    .app-header h1 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 0%, var(--color-accent) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: -0.5px;
+    }
+
+    /* NAVIGATION TABS */
+    .nav-tabs {
+      display: flex;
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid var(--glass-border);
+      overflow-x: auto;
+    }
+
+    .tab {
+      flex: 1;
+      padding: 1.25rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: var(--transition);
+      position: relative;
+      white-space: nowrap;
+    }
+
+    .tab:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .tab.active {
+      color: var(--color-accent);
+    }
+
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60%;
+      height: 3px;
+      background: var(--gradient-3);
+      border-radius: 3px 3px 0 0;
+    }
+
+    /* CONTENT */
+    .content {
+      padding: 2rem;
+    }
+
+    .tab-content {
+      animation: contentFade 0.3s ease;
+    }
+
+    .tab-content.hidden {
+      display: none;
+    }
+
+    @keyframes contentFade {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .section-title::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: var(--gradient-3);
+      border-radius: 2px;
+    }
+
+    /* FORM ELEMENTS */
+    textarea,
+    input[type="text"],
+    input[type="date"],
+    input[type="password"],
+    select {
+      width: 100%;
+      padding: 1rem 1.25rem;
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 1rem;
+      font-family: inherit;
+      transition: var(--transition);
+      outline: none;
+    }
+
+    textarea:focus,
+    input:focus,
+    select:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
+    }
+
+    textarea::placeholder,
+    input::placeholder {
+      color: var(--text-secondary);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 150px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    /* RESULTS */
+    .result-card {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      transition: var(--transition);
+    }
+
+    .result-card:hover {
+      border-color: rgba(6, 182, 212, 0.3);
+      transform: translateX(4px);
+    }
+
+    .result-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .result-meta {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .result-link {
+      color: var(--color-accent);
+      text-decoration: none;
+      font-weight: 500;
+      transition: var(--transition);
+    }
+
+    .result-link:hover {
+      color: #22d3ee;
+      text-decoration: underline;
+    }
+
+    .result-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .result-actions .btn {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+    }
+
+    .codes-pre {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 8px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.875rem;
+      color: var(--color-accent);
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
+    .codes-pre.hidden {
+      display: none;
+    }
+
+    /* TOAST */
+    #toast-container {
+      position: fixed;
+      top: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      z-index: 10000;
+    }
+
+    .toast {
+      background: var(--gradient-1);
+      color: white;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      animation: toastIn 0.4s ease;
+    }
+
+    @keyframes toastIn {
+      from {
+        transform: translateY(-20px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .toast button {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    /* ALERT */
+    .alert {
+      padding: 1rem;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+    }
+
+    .alert--warning {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fcd34d;
+    }
+
+    .alert--error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .alert--success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #6ee7b7;
+    }
+
+    /* MODE BUTTONS */
+    .mode-selector {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 1.25rem;
+      background: rgba(0, 0, 0, 0.3);
+      border: 2px solid var(--glass-border);
+      border-radius: 16px;
+      color: var(--text-secondary);
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      text-align: center;
+    }
+
+    .mode-btn:hover {
+      border-color: rgba(99, 102, 241, 0.5);
+    }
+
+    .mode-btn.active {
+      background: rgba(99, 102, 241, 0.2);
+      border-color: var(--color-primary);
+      color: var(--text-primary);
+    }
+
+    /* FOOTER */
+    .app-footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      margin-top: auto;
+    }
+
+    .app-footer strong {
+      background: var(--gradient-3);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 700;
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--color-primary);
+      border-radius: 4px;
+    }
+
+    /* RESPONSIVE */
     @media (max-width: 768px) {
-      #tabs {
-        flex-direction: column;
-      }
-
-      .flex.gap-4 {
-        flex-direction: column;
-      }
-
-      .p-6 {
+      .app-container {
         padding: 1rem;
+      }
+
+      .content {
+        padding: 1.5rem;
+      }
+
+      .nav-tabs {
+        flex-wrap: nowrap;
+      }
+
+      .tab {
+        padding: 1rem 0.75rem;
+        font-size: 0.875rem;
+      }
+
+      .mode-selector {
+        flex-direction: column;
+      }
+
+      .result-actions {
+        flex-direction: column;
+      }
+
+      .result-actions .btn {
+        width: 100%;
       }
     }
 
-    @media (max-width: 480px) {
-      h1.text-2xl {
-        font-size: 1.5rem;
+    /* PARTICLES */
+    .particle {
+      position: fixed;
+      width: 4px;
+      height: 4px;
+      background: var(--color-accent);
+      border-radius: 50%;
+      opacity: 0.3;
+      pointer-events: none;
+      animation: float 15s infinite;
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
       }
 
-      .modal {
-        max-width: 95%;
-        padding: 1rem;
+      10% {
+        opacity: 0.3;
       }
 
-      .btn {
-        padding: 0.5rem;
-        font-size: 0.875rem;
+      90% {
+        opacity: 0.3;
       }
 
-      textarea,
-      input {
-        font-size: 0.875rem;
+      100% {
+        transform: translateY(-100vh) rotate(720deg);
+        opacity: 0;
       }
+    }
+
+    /* SUGGESTIONS DROPDOWN */
+    #suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: rgba(15, 23, 42, 0.98);
+      border: 1px solid var(--glass-border);
+      border-radius: 0 0 12px 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 20;
+    }
+
+    #suggestions.hidden {
+      display: none;
+    }
+
+    #suggestions div {
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    #suggestions div:hover {
+      background: rgba(99, 102, 241, 0.2);
+    }
+
+    /* SETTINGS MODAL */
+    .settings-modal .modal {
+      max-width: 450px;
+    }
+
+    .settings-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+      padding: 0.5rem 0;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--color-accent);
+    }
+
+    select {
+      background: rgba(0, 0, 0, 0.4);
+    }
+
+    /* LOADING SPINNER */
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: var(--color-accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .flex {
+      display: flex;
+    }
+
+    .gap-2 {
+      gap: 0.5rem;
+    }
+
+    .gap-4 {
+      gap: 1rem;
+    }
+
+    .mb-4 {
+      margin-bottom: 1rem;
+    }
+
+    .mt-4 {
+      margin-top: 1rem;
+    }
+
+    .text-center {
+      text-align: center;
+    }
+
+    .space-y-4>*+* {
+      margin-top: 1rem;
     }
   </style>
 </head>
 
-<body class="bg-gray-100 min-h-screen flex items-start justify-center p-6">
+<body>
+  <!-- PARTICLES BACKGROUND -->
+  <div id="particles"></div>
 
-  <div id="loginOverlay" class="overlay">
-    <div class="modal">
-      <h2 class="text-xl font-semibold">Acceso Restringido</h2>
-      <p class="mt-2 text-gray-700">Ingrese su número de acceso:</p>
-      <input id="accessInput" type="password" placeholder="Número de acceso" />
-      <button id="submitAccess" class="btn btn--primary btn--full">Enviar</button>
-      <p id="errorMsg" class="mt-2 text-red-500 hidden">Número incorrecto. Intente de nuevo.</p>
+  <div class="app-container">
+    <!-- LOGIN OVERLAY -->
+    <div id="loginOverlay" class="overlay">
+      <div class="modal">
+        <h2>🔐 Acceso Restringido</h2>
+        <p>Ingrese su número de acceso para continuar</p>
+        <input id="accessInput" type="password" placeholder="Número de acceso" />
+        <button id="submitAccess" class="btn btn--primary btn--full mt-4">Ingresar</button>
+        <p id="errorMsg" class="alert alert--error mt-4 hidden">Número incorrecto. Intente de nuevo.</p>
+      </div>
     </div>
-  </div>
 
-  <div id="confirmOverlay" class="overlay hidden">
-    <div id="confirmBox" class="modal confirm">
-      <p id="confirmMsg">¿Confirmar acción?</p>
-      <button id="confirmOk" class="btn btn--primary">Aceptar</button>
-      <button id="confirmCancel" class="btn btn--secondary">Cancelar</button>
+    <!-- CONFIRM DIALOG -->
+    <div id="confirmOverlay" class="overlay hidden">
+      <div class="modal text-center">
+        <p id="confirmMsg" style="font-size: 1.1rem; margin-bottom: 1.5rem;">¿Confirmar acción?</p>
+        <div class="flex gap-4">
+          <button id="confirmCancel" class="btn btn--secondary btn--flex1">Cancelar</button>
+          <button id="confirmOk" class="btn btn--primary btn--flex1">Aceptar</button>
+        </div>
+      </div>
     </div>
-  </div>
 
-  <div id="deleteOverlay" class="overlay hidden">
-    <div class="modal deleteKey">
-      <h2 class="text-xl font-semibold">Clave de Eliminación</h2>
-      <p class="mt-2 text-gray-700">Ingrese la clave para eliminar:</p>
-      <input id="deleteKeyInput" type="password" placeholder="Clave de borrado"
-        class="mt-2 w-full border rounded px-3 py-2" />
-      <p id="deleteKeyError" class="mt-2 text-red-500 hidden">Clave incorrecta.</p>
-      <button id="deleteKeyOk" class="btn btn--primary btn--full">Enviar</button>
-      <button id="deleteKeyCancel" class="btn btn--secondary btn--full">Cancelar</button>
+    <!-- DELETE KEY DIALOG -->
+    <div id="deleteOverlay" class="overlay hidden">
+      <div class="modal">
+        <h2>🔑 Clave de Eliminación</h2>
+        <p>Ingrese la clave para eliminar este documento</p>
+        <input id="deleteKeyInput" type="password" placeholder="Clave de borrado" />
+        <p id="deleteKeyError" class="alert alert--error mt-4 hidden">Clave incorrecta.</p>
+        <button id="deleteKeyOk" class="btn btn--danger btn--full mt-4">Confirmar Eliminación</button>
+        <button id="deleteKeyCancel" class="btn btn--secondary btn--full mt-4">Cancelar</button>
+      </div>
     </div>
-  </div>
 
-  <!-- A. El Modal de Configuración (Actualizado) -->
-  <div id="extractionSettingsModal" class="overlay hidden">
-    <div class="modal text-left" style="max-width: 400px;">
-      <h3 class="text-xl font-bold mb-2 text-gray-800">⚙️ Configurar Escaneo</h3>
-      <p class="text-sm text-gray-600 mb-4">Define cómo leeremos este documento o imagen.</p>
+    <!-- EXTRACTION SETTINGS MODAL -->
+    <div id="extractionSettingsModal" class="overlay hidden settings-modal">
+      <div class="modal">
+        <h2>⚙️ Configurar Escaneo</h2>
+        <p>Define cómo leeremos este documento o imagen</p>
 
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-bold text-gray-700 mb-1">Buscar códigos que empiecen por:</label>
+        <div class="settings-group">
+          <label>Buscar códigos que empiecen por:</label>
           <input id="setting-prefixes" type="text" value="Ref:, Factura:, Inv:, REF, Ref, Codigo:"
-            class="w-full border rounded px-3 py-2 text-sm bg-gray-50" placeholder="Ej: Ref:, Inv:, Cod:">
+            placeholder="Ej: Ref:, Inv:, Cod:">
         </div>
 
-        <div>
-          <label class="block text-sm font-bold text-gray-700 mb-1">El código termina cuando encuentra:</label>
-          <select id="setting-terminator" class="w-full border rounded px-3 py-2 text-sm bg-white">
+        <div class="settings-group">
+          <label>El código termina cuando encuentra:</label>
+          <select id="setting-terminator">
             <option value="space">Espacio o Salto de Línea (Estándar)</option>
             <option value="/">Barra inclinada (/)</option>
             <option value="-">Guión (-)</option>
             <option value=".">Punto (.)</option>
             <option value="custom">Otro carácter...</option>
           </select>
-          <input id="setting-terminator-custom" type="text" class="w-full border rounded px-3 py-2 text-sm mt-2 hidden"
-            placeholder="Escribe el carácter" maxlength="1">
+          <input id="setting-terminator-custom" type="text" class="hidden mt-4" placeholder="Escribe el carácter"
+            maxlength="1">
         </div>
 
-        <div class="flex flex-col gap-2">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input id="setting-join-hyphens" type="checkbox" class="w-4 h-4 text-blue-600 rounded" checked>
-            <span class="text-sm text-gray-700">Unir códigos cortados por línea (Ej: 123- \n 456)</span>
+        <div class="settings-group">
+          <label class="checkbox-label">
+            <input id="setting-join-hyphens" type="checkbox" checked>
+            <span>Unir códigos cortados por línea</span>
           </label>
-
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input id="setting-ocr" type="checkbox" class="w-4 h-4 text-purple-600 rounded" checked disabled>
-            <span class="text-sm text-purple-800 font-medium">Modo Inteligente (PDF Text + OCR)</span>
+          <label class="checkbox-label">
+            <input id="setting-ocr" type="checkbox" checked disabled>
+            <span style="color: var(--color-accent);">Modo Inteligente (PDF + OCR)</span>
           </label>
         </div>
-      </div>
 
-      <div class="flex gap-3 mt-6">
-        <button onclick="cancelExtraction()" class="btn btn--secondary flex-1">Cancelar</button>
-        <button onclick="confirmExtraction()" class="btn btn--primary flex-1 shadow-lg">🚀 Escanear Ahora</button>
+        <div class="flex gap-4 mt-4">
+          <button onclick="cancelExtraction()" class="btn btn--secondary btn--flex1">Cancelar</button>
+          <button onclick="confirmExtraction()" class="btn btn--primary btn--flex1">🚀 Escanear</button>
+        </div>
       </div>
     </div>
-  </div>
 
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
 
-  <div id="toast-container"></div>
-
-  <div id="mainContent" class="w-full max-w-4xl bg-white rounded-2xl shadow-lg hidden">
-    <div class="bg-white border-b">
-      <h1 class="text-2xl font-bold text-center py-4">KINO COMPANY SAS V1</h1>
-    </div>
-    <nav class="border-b bg-white shadow-sm">
-      <ul id="tabs" class="flex">
-        <li class="tab flex-1 text-center cursor-pointer px-6 py-4 active" data-tab="tab-search">Buscar</li>
-        <li class="tab flex-1 text-center cursor-pointer px-6 py-4" data-tab="tab-upload">Subir</li>
-        <li class="tab flex-1 text-center cursor-pointer px-6 py-4" data-tab="tab-list">Consultar</li>
-        <li class="tab flex-1 text-center cursor-pointer px-6 py-4" data-tab="tab-code">Búsqueda por Código</li>
-      </ul>
-    </nav>
-    <div class="p-6 space-y-6">
-
-      <div id="tab-search" class="tab-content">
-        <h2 class="text-xl font-semibold mb-4">Búsqueda Inteligente</h2>
-        <textarea id="searchInput" rows="6" class="w-full border rounded px-3 py-2 text-lg mb-4"
-          placeholder="Pega aquí tus códigos o bloque de texto…"></textarea>
-        <div class="flex gap-4 mb-4">
-          <button onclick="doSearch()" class="btn btn--primary btn--flex1 text-lg">Buscar</button>
-          <button onclick="clearSearch()" class="btn btn--secondary btn--flex1 text-lg">Limpiar</button>
-        </div>
-        <div id="search-alert" class="text-red-600 font-medium text-lg mb-4"></div>
-        <div id="results-search" class="space-y-4"></div>
+    <!-- MAIN CONTENT -->
+    <div id="mainContent" class="main-card hidden">
+      <div class="app-header">
+        <h1>KINO COMPANY SAS V1</h1>
       </div>
 
-      <div id="tab-upload" class="tab-content hidden">
-        <h2 class="text-xl font-semibold mb-4">Subir / Editar Documento</h2>
+      <nav class="nav-tabs">
+        <div class="tab active" data-tab="tab-search">🔍 Buscar</div>
+        <div class="tab" data-tab="tab-upload">📤 Subir</div>
+        <div class="tab" data-tab="tab-list">📋 Consultar</div>
+        <div class="tab" data-tab="tab-code">🏷️ Por Código</div>
+      </nav>
 
-        <div class="flex gap-4 mb-6">
-          <button type="button" onclick="setUploadMode('manual')" id="btn-mode-manual"
-            class="btn btn--secondary flex-1 py-4 text-lg border-2 border-transparent">
-            ✋ Subida Manual
-          </button>
-          <button type="button" onclick="setUploadMode('auto')" id="btn-mode-auto"
-            class="btn btn--secondary flex-1 py-4 text-lg border-2 border-transparent">
-            🤖 Subida Automática
-          </button>
+      <div class="content">
+        <!-- TAB: SEARCH -->
+        <div id="tab-search" class="tab-content">
+          <h2 class="section-title">Búsqueda Inteligente</h2>
+          <div class="form-group">
+            <textarea id="searchInput" rows="6" placeholder="Pega aquí tus códigos o bloque de texto…"></textarea>
+          </div>
+          <div class="flex gap-4 mb-4">
+            <button onclick="doSearch()" class="btn btn--primary btn--flex1">🔍 Buscar</button>
+            <button onclick="clearSearch()" class="btn btn--secondary btn--flex1">🗑️ Limpiar</button>
+          </div>
+          <div id="search-alert" class="alert alert--error hidden"></div>
+          <div id="results-search" class="space-y-4"></div>
         </div>
 
-        <div id="upload-help-text" class="mb-4 p-3 bg-blue-50 text-blue-800 rounded text-sm hidden">
-        </div>
+        <!-- TAB: UPLOAD -->
+        <div id="tab-upload" class="tab-content hidden">
+          <h2 class="section-title">Subir / Editar Documento</h2>
 
-        <form id="form-upload" enctype="multipart/form-data" class="space-y-4">
-          <input id="docId" type="hidden" name="id" />
-
-          <div>
-            <label class="block mb-1 text-lg">Nombre</label>
-            <input id="name" name="name" type="text" required class="w-full border rounded px-3 py-2 text-lg" />
+          <div class="mode-selector">
+            <button type="button" onclick="setUploadMode('manual')" id="btn-mode-manual" class="mode-btn active">
+              ✋ Subida Manual
+            </button>
+            <button type="button" onclick="setUploadMode('auto')" id="btn-mode-auto" class="mode-btn">
+              🤖 Subida Automática
+            </button>
           </div>
 
-          <div>
-            <label class="block mb-1 text-lg">Fecha</label>
-            <input id="date" name="date" type="date" required class="w-full border rounded px-3 py-2 text-lg" />
-          </div>
+          <div id="upload-help-text" class="alert alert--warning hidden"></div>
 
-          <div>
-            <label class="block mb-1 text-lg">PDF o Documento</label>
-            <input id="file" name="file" type="file" accept="application/pdf,image/*" class="w-full text-lg"
-              onchange="handleFileSelect(this)" />
+          <form id="form-upload" enctype="multipart/form-data">
+            <input id="docId" type="hidden" name="id" />
 
-            <p id="uploadWarning" class="mt-1 text-red-600 text-sm hidden">
-              El archivo excede los 10 MB. Por favor, sube uno menor.
-            </p>
-
-            <div id="auto-extract-status" class="hidden mt-2 text-sm font-semibold text-orange-600">
-              ⏳ Analizando PDF y extrayendo códigos...
+            <div class="form-group">
+              <label>Nombre del documento</label>
+              <input id="name" name="name" type="text" required placeholder="Nombre descriptivo">
             </div>
-          </div>
 
-          <div>
-            <label class="block mb-1 text-lg">Códigos (Uno por línea)</label>
-            <textarea id="codes" name="codes" rows="6" class="w-full border rounded px-3 py-2 text-lg font-mono"
-              placeholder="Los códigos aparecerán aquí..."></textarea>
-            <p class="text-sm text-gray-500 mt-1 text-right" id="code-count">0 códigos</p>
-          </div>
-
-          <!-- B. La Advertencia Visual (Agregado) -->
-          <div id="verify-warning"
-            class="hidden mt-6 mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-500 rounded shadow-sm">
-            <div class="flex items-start">
-              <div class="flex-shrink-0">
-                <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div class="ml-3">
-                <h3 class="text-lg font-bold text-yellow-800">⚠️ VERIFICA LOS CÓDIGOS</h3>
-                <div class="mt-1 text-yellow-700 font-medium">
-                  <p>Por favor, revisa la lista de códigos de arriba y <strong>edítalos si es necesario</strong> antes
-                    de
-                    subir el documento.</p>
-                  <p class="text-sm mt-1">Asegúrate de borrar basura o agregar códigos que el sistema no haya detectado.
-                  </p>
-                </div>
-              </div>
+            <div class="form-group">
+              <label>Fecha</label>
+              <input id="date" name="date" type="date" required>
             </div>
-          </div>
 
-          <button type="submit" class="btn btn--primary btn--full text-lg">Guardar Documento</button>
-        </form>
-      </div>
+            <div class="form-group">
+              <label>PDF o Imagen</label>
+              <input id="file" name="file" type="file" accept="application/pdf,image/*"
+                onchange="handleFileSelect(this)" style="padding: 0.75rem;">
+              <p id="uploadWarning" class="alert alert--error mt-4 hidden">
+                El archivo excede los 10 MB. Por favor, sube uno menor.
+              </p>
+              <div id="auto-extract-status" class="hidden alert alert--warning mt-4"></div>
+            </div>
 
-      <div id="tab-list" class="tab-content hidden">
-        <h2 class="text-xl font-semibold mb-4">Consultar Documentos</h2>
-        <div class="flex gap-4 mb-4">
-          <input id="consultFilterInput" type="text" class="flex-1 border rounded px-3 py-2 text-lg"
-            placeholder="Filtrar por nombre o PDF" oninput="doConsultFilter()" />
-          <button onclick="clearConsultFilter()" class="btn btn--secondary text-lg">Limpiar</button>
-          <button onclick="downloadCsv()" class="btn btn--primary text-lg">Descargar CSV</button>
-          <button onclick="downloadPdfs()" class="btn btn--dark text-lg">Descargar PDFs</button>
+            <div class="form-group">
+              <label>Códigos (Uno por línea)</label>
+              <textarea id="codes" name="codes" rows="6" style="font-family: monospace;"
+                placeholder="Los códigos aparecerán aquí..."></textarea>
+              <p id="code-count"
+                style="text-align: right; color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.5rem;">0
+                códigos</p>
+            </div>
+
+            <div id="verify-warning" class="alert alert--warning hidden">
+              <strong>⚠️ VERIFICA LOS CÓDIGOS</strong>
+              <p style="margin-top: 0.5rem;">Revisa la lista y edítala si es necesario antes de subir.</p>
+            </div>
+
+            <button type="submit" class="btn btn--primary btn--full mt-4">💾 Guardar Documento</button>
+          </form>
         </div>
-        <div id="results-list" class="space-y-4"></div>
-      </div>
 
-      <div id="tab-code" class="tab-content hidden">
-        <h2 class="text-xl font-semibold mb-4">Búsqueda por Código</h2>
-        <div class="relative mb-4">
-          <input id="codeInput" type="text" class="w-full border rounded px-3 py-2 text-lg"
-            placeholder="Código en MAYÚSCULAS (ej: ABC123)" autocomplete="off" />
-          <div id="suggestions"
-            class="absolute top-full left-0 right-0 bg-white border rounded-b px-2 shadow max-h-48 overflow-auto hidden z-20">
+        <!-- TAB: LIST -->
+        <div id="tab-list" class="tab-content hidden">
+          <h2 class="section-title">Consultar Documentos</h2>
+          <div class="flex gap-4 mb-4" style="flex-wrap: wrap;">
+            <input id="consultFilterInput" type="text" style="flex: 1; min-width: 200px;"
+              placeholder="Filtrar por nombre o PDF" oninput="doConsultFilter()">
+            <button onclick="clearConsultFilter()" class="btn btn--secondary">Limpiar</button>
+            <button onclick="downloadCsv()" class="btn btn--accent">📊 CSV</button>
+            <button onclick="downloadPdfs()" class="btn btn--primary">📁 PDFs</button>
           </div>
+          <div id="results-list" class="space-y-4"></div>
         </div>
-        <button onclick="doCodeSearch()" class="btn btn--primary btn--full mb-4 text-lg">Buscar por Código</button>
-        <div id="results-code" class="space-y-4"></div>
+
+        <!-- TAB: CODE SEARCH -->
+        <div id="tab-code" class="tab-content hidden">
+          <h2 class="section-title">Búsqueda por Código</h2>
+          <div class="form-group" style="position: relative;">
+            <input id="codeInput" type="text" placeholder="Código (ej: ABC123)" autocomplete="off">
+            <div id="suggestions" class="hidden"></div>
+          </div>
+          <button onclick="doCodeSearch()" class="btn btn--primary btn--full mb-4">🔍 Buscar por Código</button>
+          <div id="results-code" class="space-y-4"></div>
+        </div>
       </div>
     </div>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      <p>Elaborado por <strong>KINO GENIUS</strong></p>
+    </footer>
   </div>
 
   <script>
+    // === CODE PROTECTION ===
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    document.addEventListener('keydown', e => {
+      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) || (e.ctrlKey && e.key === 'u')) {
+        e.preventDefault();
+      }
+    });
+
+    // === PARTICLES ===
+    (function createParticles() {
+      const container = document.getElementById('particles');
+      for (let i = 0; i < 15; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.animationDelay = Math.random() * 15 + 's';
+        p.style.animationDuration = (15 + Math.random() * 10) + 's';
+        container.appendChild(p);
+      }
+    })();
+
+    // === CORE VARIABLES ===
     const apiBase = './api.php';
     const params = new URLSearchParams(window.location.search);
     const clientCode = params.get('c');
-    if (!clientCode) {
-      window.location.href = 'login.php';
-    }
+    if (!clientCode) window.location.href = 'login.php';
     const apiUrl = `${apiBase}?c=${encodeURIComponent(clientCode)}`;
-    // const ACCESS_KEY = '565'; 
-    // const DELETION_KEY = '0101';
-    // const DELETION_KEY = '0101';
     let fullList = [];
     let pendingDeleteId = null;
-    let pendingFile = null; // Variable temporal para guardar el archivo mientras configuramos
+    let pendingFile = null;
+    let intervalId = null;
+    let currentUploadMode = 'manual';
 
-    // Cargar colores y TÍTULO del cliente
+    // === CLIENT CONFIG ===
     (async function loadClientConfig() {
       try {
         const res = await fetch(`${apiUrl}&action=get_client_config`);
         const config = await res.json();
-
-        // Colores
         if (config.color_primario) document.documentElement.style.setProperty('--color-primary', config.color_primario);
-        if (config.color_secundario) document.documentElement.style.setProperty('--color-secondary', config.color_secundario);
-
-        // TÍTULO (Nuevo)
+        if (config.color_secundario) document.documentElement.style.setProperty('--color-accent', config.color_secundario);
         if (config.titulo_app) {
-          document.querySelector('h1').innerText = config.titulo_app;
-          document.title = config.titulo_app; // También cambia el título de la pestaña del navegador
+          document.querySelector('.app-header h1').innerText = config.titulo_app;
+          document.title = config.titulo_app;
         }
-
       } catch (e) { console.log('Using default config'); }
     })();
 
-    // POLLING CONTROL ROBUSTO
-    let intervalId = null;
-    function startPolling(refreshFn) {
-      stopPolling();
-      intervalId = setInterval(refreshFn, 60000);
-    }
-    function stopPolling() {
-      if (intervalId !== null) clearInterval(intervalId);
-      intervalId = null;
+    // === POLLING ===
+    function startPolling(fn) { stopPolling(); intervalId = setInterval(fn, 60000); }
+    function stopPolling() { if (intervalId) clearInterval(intervalId); intervalId = null; }
+
+    // === TOAST ===
+    function toast(msg, d = 3000) {
+      const c = document.getElementById('toast-container');
+      const e = document.createElement('div');
+      e.className = 'toast';
+      e.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()">×</button>`;
+      c.appendChild(e);
+      setTimeout(() => e.remove(), d);
     }
 
-    function clearSearch() {
-      document.getElementById('searchInput').value = '';
-      document.getElementById('results-search').innerHTML = '';
-      document.getElementById('search-alert').innerText = '';
+    // === CONFIRM DIALOG ===
+    function confirmDialog(msg) {
+      return new Promise(resolve => {
+        const ov = document.getElementById('confirmOverlay');
+        document.getElementById('confirmMsg').textContent = msg;
+        ov.classList.remove('hidden');
+        document.getElementById('confirmOk').onclick = () => { ov.classList.add('hidden'); resolve(true); };
+        document.getElementById('confirmCancel').onclick = () => { ov.classList.add('hidden'); resolve(false); };
+      });
     }
 
+    // === LOGIN ===
     document.getElementById('submitAccess').onclick = async () => {
       const pass = document.getElementById('accessInput').value;
       const btn = document.getElementById('submitAccess');
       const err = document.getElementById('errorMsg');
-
       btn.disabled = true;
-      btn.textContent = "Verificando...";
+      btn.innerHTML = '<div class="spinner"></div>';
       err.classList.add('hidden');
-
       try {
         const fd = new FormData();
         fd.append('action', 'login');
         fd.append('password', pass);
-
         const res = await fetch(apiUrl, { method: 'POST', body: fd });
         const data = await res.json();
-
         if (data.success) {
           document.getElementById('loginOverlay').classList.add('hidden');
           document.getElementById('mainContent').classList.remove('hidden');
@@ -590,71 +1103,48 @@
         err.classList.remove('hidden');
       }
       btn.disabled = false;
-      btn.textContent = "Enviar";
+      btn.textContent = "Ingresar";
     };
     document.getElementById('accessInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('submitAccess').click(); });
 
-    function toast(msg, d = 3000) {
-      const c = document.getElementById('toast-container');
-      const e = document.createElement('div'); e.className = 'toast';
-      e.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()">×</button>`;
-      c.appendChild(e);
-      setTimeout(() => e.remove(), d);
+    // === CLEAR FUNCTIONS ===
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('results-search').innerHTML = '';
+      document.getElementById('search-alert').classList.add('hidden');
     }
 
-    function confirmDialog(msg) {
-      return new Promise(resolve => {
-        const ov = document.getElementById('confirmOverlay');
-        document.getElementById('confirmMsg').textContent = msg;
-        ov.classList.remove('hidden');
-        document.getElementById('confirmOk').onclick = () => { ov.classList.add('hidden'); resolve(true); };
-        document.getElementById('confirmCancel').onclick = () => { ov.classList.add('hidden'); resolve(false); };
-      });
-    }
-
+    // === INIT APP ===
     function initApp() {
       const deleteOv = document.getElementById('deleteOverlay');
       const dkInput = document.getElementById('deleteKeyInput');
       const dkErr = document.getElementById('deleteKeyError');
 
       document.getElementById('deleteKeyOk').onclick = async () => {
-        const keyVal = document.getElementById('deleteKeyInput').value;
-        const dkErr = document.getElementById('deleteKeyError');
+        const keyVal = dkInput.value;
         const dkBtn = document.getElementById('deleteKeyOk');
-
         dkBtn.disabled = true;
-        dkBtn.textContent = "...";
-
+        dkBtn.innerHTML = '<div class="spinner"></div>';
         try {
-          // Verificar clave con API
           const fd = new FormData();
           fd.append('action', 'verify_delete_key');
           fd.append('key', keyVal);
-
           const res = await fetch(apiUrl, { method: 'POST', body: fd });
           const data = await res.json();
-
           if (!data.success) {
             dkErr.classList.remove('hidden');
             dkBtn.disabled = false;
-            dkBtn.textContent = "Enviar";
+            dkBtn.textContent = "Confirmar Eliminación";
             return;
           }
-
-          // Si es correcta, proceder a borrar
-          document.getElementById('deleteOverlay').classList.add('hidden');
+          deleteOv.classList.add('hidden');
           dkErr.classList.add('hidden');
-          document.getElementById('deleteKeyInput').value = '';
-
+          dkInput.value = '';
           const ok = await confirmDialog('¿Eliminar este documento permanentemente?');
-          if (ok) {
-            await deleteDoc(pendingDeleteId);
-          }
-        } catch (e) {
-          alert("Error de red verificando clave.");
-        }
+          if (ok) await deleteDoc(pendingDeleteId);
+        } catch (e) { alert("Error de red."); }
         dkBtn.disabled = false;
-        dkBtn.textContent = "Enviar";
+        dkBtn.textContent = "Confirmar Eliminación";
       };
       document.getElementById('deleteKeyCancel').onclick = () => { deleteOv.classList.add('hidden'); dkErr.classList.add('hidden'); dkInput.value = ''; };
 
@@ -662,14 +1152,10 @@
         const res = await fetch(`${apiUrl}&action=list&page=1&per_page=0`);
         const js = await res.json();
         fullList = js.data || [];
-
         if (document.querySelector('.tab.active').dataset.tab === 'tab-list') {
           const term = document.getElementById('consultFilterInput').value.trim().toLowerCase();
-          if (term) {
-            doConsultFilter();
-          } else {
-            render(fullList, 'results-list', false);
-          }
+          if (term) doConsultFilter();
+          else render(fullList, 'results-list', false);
         }
       }
       refresh();
@@ -680,12 +1166,7 @@
         document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
         tab.classList.add('active');
         document.getElementById(tab.dataset.tab).classList.remove('hidden');
-        if (tab.dataset.tab === 'tab-list') {
-          refresh();             // Refresca al interactuar
-          startPolling(refresh); // Activa polling auto cada 30s SOLO aquí
-        } else {
-          stopPolling();         // Detén polling al salir de la pestaña Consulta
-        }
+        if (tab.dataset.tab === 'tab-list') { refresh(); startPolling(refresh); } else { stopPolling(); }
         if (tab.dataset.tab === 'tab-search') clearSearch();
         if (tab.dataset.tab === 'tab-code') clearCode();
       });
@@ -695,57 +1176,35 @@
       function render(items, cid, hideActions) {
         const ct = document.getElementById(cid);
         if (!items || !items.length) {
-          ct.innerHTML = '<p class="text-gray-500">No hay documentos.</p>';
+          ct.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No hay documentos.</p>';
           return;
         }
-
-        // --- LÓGICA AGREGADA PARA OBTENER CÓDIGO ACTUAL ---
         const activeTab = document.querySelector('.tab.active')?.dataset.tab;
         let searchCode = '';
-        if (activeTab === 'tab-code') {
-          searchCode = document.getElementById('codeInput').value.trim();
-        } else if (activeTab === 'tab-search') {
+        if (activeTab === 'tab-code') searchCode = document.getElementById('codeInput').value.trim();
+        else if (activeTab === 'tab-search') {
           const raw = document.getElementById('searchInput').value.trim();
           searchCode = raw.split(/\s+/)[0] || '';
         }
-        // --------------------------------------------------
-
         ct.innerHTML = items.map(d => `
-          <div class="border rounded p-4 bg-gray-50">
-            <div class="flex justify-between">
-              <div>
-                <h3 class="font-semibold text-lg">${d.name}</h3>
-                <p class="text-gray-600">${d.date}</p>
-                <p class="text-gray-600 text-sm">Archivo PDF: ${d.path}</p>
-                <a href="uploads/${d.path}" target="_blank" class="text-indigo-600 underline">Ver PDF</a>
-              </div>
-              <div class="button-group text-right">
-                ${!hideActions ? `
-                  <button onclick="editDoc(${d.id})" class="btn btn--warning px-2 py-1 text-lg">Editar</button>
-                  <button onclick="pendingDeleteId=${d.id}; document.getElementById('deleteOverlay').classList.remove('hidden'); document.getElementById('deleteKeyInput').focus();" class="btn btn--primary px-2 py-1 text-lg">Eliminar</button>
-                ` : ''}
-                
-                <button data-id="${d.id}" onclick="toggleCodes(this)" class="btn btn--secondary px-2 py-1 text-lg">Ver Códigos</button>
-                
-                ${searchCode ? `
-                <a href="visor.html?file=uploads/${d.path}&code=${encodeURIComponent(searchCode)}" target="_blank" 
-                   class="btn btn--highlight px-2 py-1 text-lg flex items-center justify-center gap-1 mt-1">
-                   🖍️ Resaltar
-                </a>
-                ` : ''}
-
-              </div>
+          <div class="result-card">
+            <div class="result-title">${d.name}</div>
+            <div class="result-meta">${d.date} • ${d.path}</div>
+            <a href="uploads/${d.path}" target="_blank" class="result-link">📄 Ver PDF</a>
+            <div class="result-actions">
+              ${!hideActions ? `
+                <button onclick="editDoc(${d.id})" class="btn btn--warning">✏️ Editar</button>
+                <button onclick="pendingDeleteId=${d.id}; document.getElementById('deleteOverlay').classList.remove('hidden'); document.getElementById('deleteKeyInput').focus();" class="btn btn--danger">🗑️ Eliminar</button>
+              ` : ''}
+              <button data-id="${d.id}" onclick="toggleCodes(this)" class="btn btn--secondary">👁️ Ver Códigos</button>
+              ${searchCode ? `<a href="visor.html?file=uploads/${d.path}&code=${encodeURIComponent(searchCode)}" target="_blank" class="btn btn--highlight">🖍️ Resaltar</a>` : ''}
             </div>
-            <pre id="codes${d.id}" class="mt-2 p-2 bg-white rounded hidden">${(d.codes || []).join('\n')}</pre>
+            <pre id="codes${d.id}" class="codes-pre hidden">${(d.codes || []).join('\n')}</pre>
           </div>
         `).join('');
       }
 
-      window.clearSearch = () => {
-        document.getElementById('searchInput').value = '';
-        document.getElementById('results-search').innerHTML = '';
-        document.getElementById('search-alert').innerText = '';
-      };
+      window.clearSearch = clearSearch;
       window.doSearch = async () => {
         const raw = document.getElementById('searchInput').value.trim(); if (!raw) return;
         const codes = [...new Set(raw.split(/\r?\n/).map(l => l.trim().split(/\s+/)[0]).filter(Boolean))];
@@ -753,7 +1212,9 @@
         const res = await fetch(apiUrl, { method: 'POST', body: fd }); const data = await res.json();
         const found = new Set(data.flatMap(d => d.codes || []));
         const missing = codes.filter(c => !found.has(c));
-        if (missing.length) document.getElementById('search-alert').innerText = 'No encontrados: ' + missing.join(', ');
+        const alertEl = document.getElementById('search-alert');
+        if (missing.length) { alertEl.innerText = 'No encontrados: ' + missing.join(', '); alertEl.classList.remove('hidden'); }
+        else alertEl.classList.add('hidden');
         document.getElementById('results-search').innerHTML = '';
         render(data, 'results-search', true);
       };
@@ -764,37 +1225,20 @@
         const warning = document.getElementById('uploadWarning');
         const f = e.target;
         const file = fileInput.files[0];
-
-        if (file && file.size > 10 * 1024 * 1024) {
-          warning.classList.remove('hidden');
-          return;
-        }
+        if (file && file.size > 10 * 1024 * 1024) { warning.classList.remove('hidden'); return; }
         warning.classList.add('hidden');
-
-        // --- ORDENAR LOS CÓDIGOS ANTES DE ENVIAR (alfanumérico) ---
-        let codesArr = f.codes.value
-          .split(/\r?\n/)
-          .map(s => s.trim())
-          .filter(Boolean)
-          .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+        let codesArr = f.codes.value.split(/\r?\n/).map(s => s.trim()).filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
         f.codes.value = codesArr.join('\n');
-        // ----------------------------------------------------------
-
         const act = f.id.value ? 'edit' : 'upload';
         const fd = new FormData(f);
         fd.append('action', act);
-
         const res = await fetch(apiUrl, { method: 'POST', body: fd });
         const js = await res.json();
         toast(js.message || js.error);
         f.reset();
       };
 
-
-      window.clearConsultFilter = () => {
-        document.getElementById('consultFilterInput').value = '';
-        document.getElementById('results-list').innerHTML = '';
-      };
+      window.clearConsultFilter = () => { document.getElementById('consultFilterInput').value = ''; document.getElementById('results-list').innerHTML = ''; };
       window.doConsultFilter = () => {
         const term = document.getElementById('consultFilterInput').value.trim().toLowerCase();
         render(fullList.filter(d => d.name.toLowerCase().includes(term) || d.path.toLowerCase().includes(term)), 'results-list', false);
@@ -802,17 +1246,16 @@
       window.downloadCsv = () => { let csv = 'Código,Documento\n'; fullList.forEach(d => d.codes.forEach(c => csv += `${c},${d.name}\n`)); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'documentos.csv'; a.click(); URL.revokeObjectURL(url); };
       window.downloadPdfs = () => { window.location = `${apiUrl}&action=download_pdfs`; };
 
-      // *** Cambios aquí para mayúsculas/minúsculas ***
       const codeInput = document.getElementById('codeInput'), suggest = document.getElementById('suggestions'); let timeoutId;
       codeInput.addEventListener('input', () => {
         clearTimeout(timeoutId);
-        const term = codeInput.value.trim(); // <--- sin .toUpperCase()
+        const term = codeInput.value.trim();
         if (!term) return suggest.classList.add('hidden');
         timeoutId = setTimeout(async () => {
           const r = await fetch(`${apiUrl}&action=suggest&term=${encodeURIComponent(term)}`);
           const arr = await r.json();
           if (!arr.length) return suggest.classList.add('hidden');
-          suggest.innerHTML = arr.map(c => `<div class="py-1 px-2 hover:bg-gray-100 cursor-pointer" data-code="${c}">${c}</div>`).join('');
+          suggest.innerHTML = arr.map(c => `<div data-code="${c}">${c}</div>`).join('');
           suggest.classList.remove('hidden');
         }, 200);
       });
@@ -820,25 +1263,16 @@
       codeInput.addEventListener('blur', () => setTimeout(() => suggest.classList.add('hidden'), 100));
       window.clearCode = () => { document.getElementById('results-code').innerHTML = ''; };
       window.doCodeSearch = async () => {
-        const code = codeInput.value.trim();
-        if (!code) return;
-        const fd = new FormData();
-        fd.append('action', 'search_by_code');
-        fd.append('code', code);
-        const res = await fetch(apiUrl, { method: 'POST', body: fd });
-        const data = await res.json();
-
+        const code = codeInput.value.trim(); if (!code) return;
+        const fd = new FormData(); fd.append('action', 'search_by_code'); fd.append('code', code);
+        const res = await fetch(apiUrl, { method: 'POST', body: fd }); const data = await res.json();
         document.getElementById('results-code').innerHTML = '';
-        if (!data.length) {
-          document.getElementById('results-code').innerHTML = '<p class="text-gray-500">No hay documentos.</p>';
-        } else {
-          render(data, 'results-code', true);
-        }
+        if (!data.length) document.getElementById('results-code').innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No hay documentos.</p>';
+        else render(data, 'results-code', true);
       };
 
       window.editDoc = id => {
-        const d = fullList.find(x => x.id === id);
-        if (!d) return;
+        const d = fullList.find(x => x.id === id); if (!d) return;
         document.querySelector('[data-tab="tab-upload"]').click();
         document.getElementById('docId').value = d.id;
         document.getElementById('name').value = d.name;
@@ -851,181 +1285,97 @@
         toast(js.message || js.error);
         document.querySelector('.tab.active').click();
       };
-
-      // SOLO CAMBIO AQUÍ: polling pause/reanudar y robusto
       window.toggleCodes = btn => {
         const id = btn.dataset.id;
         const pre = document.getElementById(`codes${id}`);
-        if (pre.classList.toggle('hidden')) {
-          btn.textContent = 'Ver Códigos';
-          startPolling(refresh);
-        } else {
-          btn.textContent = 'Ocultar Códigos';
-          stopPolling();
-        }
+        if (pre.classList.toggle('hidden')) { btn.textContent = '👁️ Ver Códigos'; startPolling(refresh); }
+        else { btn.textContent = '🙈 Ocultar'; stopPolling(); }
       };
     }
 
-    // --- LÓGICA DE SUBIDA MANUAL VS AUTOMÁTICA ---//
-
-    let currentUploadMode = 'manual'; // Por defecto
-
+    // === UPLOAD MODE ===
     function setUploadMode(mode) {
       currentUploadMode = mode;
-
-      // Estilos de botones
       const btnManual = document.getElementById('btn-mode-manual');
       const btnAuto = document.getElementById('btn-mode-auto');
       const helpText = document.getElementById('upload-help-text');
-
-      // Reset clases
-      btnManual.className = "btn flex-1 py-4 text-lg border-2 " + (mode === 'manual' ? "btn--primary border-blue-600" : "btn--secondary border-transparent");
-      btnAuto.className = "btn flex-1 py-4 text-lg border-2 " + (mode === 'auto' ? "btn--primary border-blue-600" : "btn--secondary border-transparent");
-
-      // Texto de ayuda
+      btnManual.className = "mode-btn " + (mode === 'manual' ? "active" : "");
+      btnAuto.className = "mode-btn " + (mode === 'auto' ? "active" : "");
       helpText.classList.remove('hidden');
-      if (mode === 'manual') {
-        helpText.innerHTML = `
-                <strong>Modo Manual:</strong> Con este botón cargarás el PDF de forma normal. 
-                Tendrás que escribir o pegar los códigos manualmente en el cuadro de abajo.
-            `;
-      } else {
-        helpText.innerHTML = `
-                <strong>Modo Automático:</strong> Al seleccionar el PDF, el sistema lo leerá, 
-                buscará referencias (como "Ref:", "Factura:", "Inv:") y rellenará los códigos automáticamente.
-            `;
-      }
+      if (mode === 'manual') helpText.innerHTML = '<strong>Modo Manual:</strong> Escribe o pega los códigos manualmente.';
+      else helpText.innerHTML = '<strong>Modo Automático:</strong> El sistema extraerá los códigos del documento.';
     }
-
-    // Iniciar en modo manual al cargar
     setUploadMode('manual');
 
-    // Manejador al seleccionar archivo
     async function handleFileSelect(input) {
-      const file = input.files[0];
-      if (!file) return;
-
-      // Validación de tamaño (existente)
+      const file = input.files[0]; if (!file) return;
       const warning = document.getElementById('uploadWarning');
-      if (file.size > 10 * 1024 * 1024) {
-        warning.classList.remove('hidden');
-        return;
-      } else {
-        warning.classList.add('hidden');
-      }
-
-      // Si estamos en MODO AUTOMÁTICO y es un PDF o IMAGEN
-      if (currentUploadMode === 'auto') {
-        if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
-          // 1. Guardamos el archivo temporalmente
-          pendingFile = file;
-          // 2. Abrimos el modal de configuración
-          document.getElementById('extractionSettingsModal').classList.remove('hidden');
-        }
+      if (file.size > 10 * 1024 * 1024) { warning.classList.remove('hidden'); return; }
+      warning.classList.add('hidden');
+      if (currentUploadMode === 'auto' && (file.type === 'application/pdf' || file.type.startsWith('image/'))) {
+        pendingFile = file;
+        document.getElementById('extractionSettingsModal').classList.remove('hidden');
       }
     }
 
     function cancelExtraction() {
       document.getElementById('extractionSettingsModal').classList.add('hidden');
-      document.getElementById('file').value = ""; // Limpiar el input file
+      document.getElementById('file').value = "";
       pendingFile = null;
     }
 
-    // --- LÓGICA DE EXTRACCIÓN MEJORADA ---
-
-    // 1. Manejo del Select de Terminador
     document.getElementById('setting-terminator').addEventListener('change', function () {
       const customInput = document.getElementById('setting-terminator-custom');
-      if (this.value === 'custom') {
-        customInput.classList.remove('hidden');
-        customInput.focus();
-      } else {
-        customInput.classList.add('hidden');
-      }
+      if (this.value === 'custom') { customInput.classList.remove('hidden'); customInput.focus(); }
+      else customInput.classList.add('hidden');
     });
 
-    // 2. Función Principal al Confirmar
     async function confirmExtraction() {
       if (!pendingFile) return;
-
-      // Obtener configuración del usuario
       const prefixesRaw = document.getElementById('setting-prefixes').value;
       const prefixes = prefixesRaw.split(',').map(s => s.trim()).filter(Boolean);
-
-      // Obtener terminador
       let terminator = document.getElementById('setting-terminator').value;
-      if (terminator === 'space') terminator = null; // Null significa espacio/whitespace
+      if (terminator === 'space') terminator = null;
       if (terminator === 'custom') terminator = document.getElementById('setting-terminator-custom').value;
-
       const joinHyphens = document.getElementById('setting-join-hyphens').checked;
-
-      // Cerrar modal
       document.getElementById('extractionSettingsModal').classList.add('hidden');
-
-      // MOSTRAR MENSAJE DE ESPERA
       const statusDiv = document.getElementById('auto-extract-status');
       statusDiv.classList.remove('hidden');
-      statusDiv.innerHTML = `
-            <div class="flex items-center gap-2 text-blue-700 animate-pulse">
-                <svg class="animate-spin h-5 w-5" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
-                <strong>Espera un momento, estamos escaneando tu documento...</strong>
-            </div>`;
-
-      document.getElementById('codes').value = "Analizando píxeles y textos...\nPor favor espera...";
-
+      statusDiv.innerHTML = '<div class="flex gap-2" style="align-items:center;"><div class="spinner"></div><strong>Escaneando documento...</strong></div>';
+      document.getElementById('codes').value = "Analizando...\nPor favor espera...";
       try {
         let fullText = "";
-
-        // A) SI ES IMAGEN (JPG, PNG, ETC) -> USAR OCR
-        if (pendingFile.type.startsWith('image/')) {
-          fullText = await processImageWithOCR(pendingFile);
-        }
-        // B) SI ES PDF -> USAR LECTOR PDF
-        else if (pendingFile.type === 'application/pdf') {
-          fullText = await processPdfText(pendingFile);
-        }
-
-        // Ejecutar el algoritmo con el texto obtenido
+        if (pendingFile.type.startsWith('image/')) fullText = await processImageWithOCR(pendingFile);
+        else if (pendingFile.type === 'application/pdf') fullText = await processPdfText(pendingFile);
         const extractedCodes = runAdvancedExtraction(fullText, prefixes, terminator, joinHyphens);
-
-        // Mostrar resultados
         displayResults(extractedCodes);
-
       } catch (error) {
         console.error(error);
-        statusDiv.innerHTML = `<span class="text-red-600">❌ Error: ${error.message}</span>`;
+        statusDiv.innerHTML = `<span style="color: var(--color-danger);">❌ Error: ${error.message}</span>`;
         document.getElementById('codes').value = "Error al leer el archivo.";
       }
-
       pendingFile = null;
     }
 
-    // 3. Procesador de Imágenes con Tesseract (OCR)
     async function processImageWithOCR(file) {
-      // Usamos Tesseract.js desde el CDN
-      const worker = await Tesseract.createWorker('eng'); // 'eng' suele leer mejor letras y números universales
+      const worker = await Tesseract.createWorker('eng');
       const ret = await worker.recognize(file);
       await worker.terminate();
       return ret.data.text;
     }
 
-    // 4. Procesador de PDF (Tu lógica existente, encapsulada)
     async function processPdfText(file) {
       const arrayBuffer = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
       let fullText = "";
-
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
         let pageText = "";
         let lastY = -1;
-
         for (const item of textContent.items) {
-          // Detección básica de saltos de línea visuales
-          if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 10) {
-            pageText += "\n";
-          } else if (pageText.length > 0 && !pageText.endsWith("\n") && !pageText.endsWith(" ") && item.str.trim().length > 0) {
+          if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 10) pageText += "\n";
+          else if (pageText.length > 0 && !pageText.endsWith("\n") && !pageText.endsWith(" ") && item.str.trim().length > 0) {
             if (!item.str.startsWith(" ")) pageText += " ";
           }
           pageText += item.str;
@@ -1036,123 +1386,58 @@
       return fullText;
     }
 
-    // 5. Algoritmo Avanzado de Extracción
     function runAdvancedExtraction(text, markers, stopChar, joinHyphens) {
       let processedText = text;
-
-      // --- REGLA: NO PARTIR CÓDIGOS CON GUIONES EN SALTOS DE LÍNEA ---
-      // Si el usuario marcó la opción, unimos "COD- \n IGO" en "COD-IGO"
-      if (joinHyphens) {
-        // Regex: Busca guión seguido opcionalmente de espacios y luego un salto de línea
-        // Lo reemplaza solo por el guión, eliminando el salto.
-        processedText = processedText.replace(/-\s*[\r\n]+\s*/g, "-");
-      }
-
-      // Normalizar saltos de línea a espacios para búsqueda continua
-      // (Opcional: depende si quieres que el salto de línea sea un terminador)
-      if (!stopChar) { // Si el terminador es espacio/enter, normalizamos enters a espacios
-        processedText = processedText.replace(/[\r\n]+/g, " ");
-      }
-
+      if (joinHyphens) processedText = processedText.replace(/-\s*[\r\n]+\s*/g, "-");
+      if (!stopChar) processedText = processedText.replace(/[\r\n]+/g, " ");
       const foundCodes = [];
       const lowerText = processedText.toLowerCase();
-
-      // Lista de caracteres de parada por defecto (si no eligió uno específico)
       const defaultStopChars = [" ", "\t", "\n", ",", ";"];
-      if (stopChar) {
-        // Si eligió uno (ej: '/'), solo paramos en ese
-        // Nota: Agregamos \n por seguridad para no leer todo el documento
-        defaultStopChars.length = 0;
-        defaultStopChars.push(stopChar, "\n");
-      }
-
+      if (stopChar) { defaultStopChars.length = 0; defaultStopChars.push(stopChar, "\n"); }
       let searchIndex = 0;
-
       while (searchIndex < processedText.length) {
         let bestStartIndex = -1;
         let bestTokenLength = 0;
-
-        // 1. Buscar marcador (Ref:, etc)
         for (const token of markers) {
           const idx = lowerText.indexOf(token.toLowerCase(), searchIndex);
-          if (idx !== -1) {
-            if (bestStartIndex === -1 || idx < bestStartIndex) {
-              bestStartIndex = idx;
-              bestTokenLength = token.length;
-            }
+          if (idx !== -1 && (bestStartIndex === -1 || idx < bestStartIndex)) {
+            bestStartIndex = idx;
+            bestTokenLength = token.length;
           }
         }
-
         if (bestStartIndex === -1) break;
-
-        // 2. Mover cursor al final del marcador y saltar espacios vacíos
         let cursor = bestStartIndex + bestTokenLength;
-        while (cursor < processedText.length && /\s/.test(processedText[cursor])) {
-          cursor++;
-        }
-
+        while (cursor < processedText.length && /\s/.test(processedText[cursor])) cursor++;
         const codeStart = cursor;
         let codeEnd = -1;
-
-        // 3. Buscar el carácter de cierre
         for (let i = codeStart; i < processedText.length; i++) {
           const char = processedText[i];
-
-          if (stopChar) {
-            // Modo estricto: solo parar en el caracter elegido
-            if (char === stopChar || char === '\n') {
-              codeEnd = i;
-              break;
-            }
-          } else {
-            // Modo estándar: parar en espacios o caracteres de puntuación raros
-            // PERMITIR GUIONES (-) DENTRO DEL CÓDIGO
-            if (defaultStopChars.includes(char)) {
-              codeEnd = i;
-              break;
-            }
-          }
+          if (stopChar) { if (char === stopChar || char === '\n') { codeEnd = i; break; } }
+          else { if (defaultStopChars.includes(char)) { codeEnd = i; break; } }
         }
-
         if (codeEnd === -1) codeEnd = processedText.length;
-
-        // 4. Extraer y validar
         if (codeEnd > codeStart) {
-          let rawCode = processedText.substring(codeStart, codeEnd).trim();
-          // Limpieza final de puntos o comas al final si quedaron pegados
-          rawCode = rawCode.replace(/[.,;]+$/, "");
-
-          if (rawCode.length > 1) {
-            foundCodes.push(rawCode);
-          }
+          let rawCode = processedText.substring(codeStart, codeEnd).trim().replace(/[.,;]+$/, "");
+          if (rawCode.length > 1) foundCodes.push(rawCode);
           searchIndex = codeEnd;
-        } else {
-          searchIndex = cursor + 1;
-        }
+        } else searchIndex = cursor + 1;
       }
-
       return [...new Set(foundCodes)];
     }
 
-    // 6. Mostrar Resultados
     function displayResults(codes) {
       const statusDiv = document.getElementById('auto-extract-status');
       const codesArea = document.getElementById('codes');
       const countLabel = document.getElementById('code-count');
-
       if (codes.length > 0) {
         codesArea.value = codes.join('\n');
-        statusDiv.innerHTML = `✅ ¡Éxito! Procesado completado. ${codes.length} códigos encontrados.`;
-        statusDiv.className = "mt-2 text-sm font-semibold text-green-600";
+        statusDiv.innerHTML = `<span style="color: var(--color-success);">✅ ¡Éxito! ${codes.length} códigos encontrados.</span>`;
         countLabel.innerText = `${codes.length} códigos`;
-
-        // Mostrar advertencia amarilla
         document.getElementById('verify-warning').classList.remove('hidden');
         document.getElementById('verify-warning').scrollIntoView({ behavior: 'smooth' });
       } else {
         codesArea.value = "";
-        statusDiv.innerHTML = "⚠️ No se encontraron códigos. Intenta ajustar los prefijos en la configuración.";
-        statusDiv.className = "mt-2 text-sm font-semibold text-yellow-600";
+        statusDiv.innerHTML = `<span style="color: var(--color-warning);">⚠️ No se encontraron códigos. Ajusta los prefijos.</span>`;
       }
     }
   </script>
