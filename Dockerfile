@@ -15,8 +15,9 @@ RUN apt-get update && apt-get install -y \
 # 2. Instalar librería PyPDF2 para el script de búsqueda
 RUN pip3 install PyPDF2 --break-system-packages
 
-# 3. Habilitar mod_rewrite de Apache
-RUN a2enmod rewrite
+# 3. Habilitar mod_rewrite y arreglar MPM (solo un MPM puede estar activo)
+RUN a2dismod mpm_event mpm_worker 2>/dev/null || true \
+    && a2enmod mpm_prefork rewrite
 
 # 4. Copiar código
 COPY . /var/www/html/
