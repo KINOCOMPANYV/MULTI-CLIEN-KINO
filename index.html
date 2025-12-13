@@ -612,6 +612,37 @@
       display: none
     }
 
+    /* Mobile Responsive Tabs */
+    @media (max-width: 640px) {
+      .tabs {
+        flex-wrap: wrap;
+      }
+
+      .tab {
+        flex: 0 0 50%;
+        border-bottom: 2px solid var(--border-hard);
+        padding: 1rem 0.5rem;
+        font-size: 0.8rem;
+      }
+
+      .tab:nth-child(odd) {
+        border-right: 2px solid var(--border-hard);
+      }
+
+      .tab:nth-child(even) {
+        border-right: none;
+      }
+
+      /* Adjust content padding for mobile */
+      .content {
+        padding: 1.5rem 1rem;
+      }
+
+      .header h1 {
+        font-size: 1.75rem;
+      }
+    }
+
     /* Mode Selector */
     .mode-selector {
       display: flex;
