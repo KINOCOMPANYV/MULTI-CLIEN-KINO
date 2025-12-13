@@ -22,25 +22,28 @@
     }
 
     :root {
-      --primary: #8b5cf6;
-      --primary-glow: rgba(139, 92, 246, 0.4);
-      --accent: #06b6d4;
-      --accent-glow: rgba(6, 182, 212, 0.3);
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --glass: rgba(255, 255, 255, 0.03);
-      --glass-border: rgba(255, 255, 255, 0.08);
-      --glass-highlight: rgba(255, 255, 255, 0.12);
-      --text: #f1f5f9;
-      --text-muted: #94a3b8;
-      --dark-1: #030712;
-      --dark-2: #0f172a;
-      --dark-3: #1e293b;
-      --font-display: 'Playfair Display', Georgia, serif;
+      /* Neobrutalismo: Alto contraste, colores vibrantes */
+      --primary: #facc15;
+      --primary-glow: rgba(250, 204, 21, 0.4);
+      --accent: #00f0ff;
+      --accent-glow: rgba(0, 240, 255, 0.3);
+      --success: #22c55e;
+      --warning: #fb923c;
+      --danger: #f43f5e;
+      --bg-card: #0a0a0a;
+      --border-hard: #333;
+      --border-accent: var(--primary);
+      --text: #ffffff;
+      --text-muted: #a1a1aa;
+      --dark-1: #000000;
+      --dark-2: #0a0a0a;
+      --dark-3: #171717;
+      --font-display: 'Inter', -apple-system, sans-serif;
       --font-body: 'Inter', -apple-system, sans-serif;
       --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
       --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+      --shadow-brutal: 4px 4px 0 var(--primary);
+      --shadow-brutal-sm: 2px 2px 0 var(--primary);
     }
 
     html {
@@ -124,43 +127,28 @@
       padding: 1.5rem
     }
 
-    /* Liquid Glass */
+    /* Neobrutalista Card */
     .liquid-glass {
-      background: linear-gradient(135deg, var(--glass) 0%, rgba(255, 255, 255, 0.01) 100%);
-      backdrop-filter: blur(24px) saturate(180%);
-      -webkit-backdrop-filter: blur(24px) saturate(180%);
-      border: 1px solid var(--glass-border);
-      box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-        0 20px 50px -12px rgba(0, 0, 0, 0.5),
-        0 0 80px -20px var(--primary-glow);
+      background: var(--bg-card);
+      border: 3px solid var(--border-hard);
+      box-shadow: var(--shadow-brutal);
       position: relative;
       overflow: hidden;
+      transition: all 0.2s var(--ease-smooth);
+    }
+
+    .liquid-glass:hover {
+      border-color: var(--primary);
+      box-shadow: 6px 6px 0 var(--primary);
+      transform: translate(-2px, -2px);
     }
 
     .liquid-glass::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-      pointer-events: none;
+      display: none;
     }
 
     .liquid-glass::after {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.06) 0%, transparent 50%);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity .5s;
-    }
-
-    .liquid-glass:hover::after {
-      opacity: 1
+      display: none;
     }
 
     /* Main Card */
@@ -187,36 +175,29 @@
       }
     }
 
-    /* Header */
+    /* Header - Neobrutalismo */
     .header {
       padding: 2rem 2.5rem;
-      border-bottom: 1px solid var(--glass-border);
-      text-align: center
+      border-bottom: 3px solid var(--border-hard);
+      text-align: center;
+      background: var(--dark-3);
     }
 
     .header h1 {
       font-family: var(--font-display);
-      font-size: 2rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--primary) 100%);
-      background-size: 200% auto;
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-      animation: shimmer 3s linear infinite;
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 3px 3px 0 var(--dark-1);
     }
 
-    @keyframes shimmer {
-      to {
-        background-position: 200% center
-      }
-    }
-
-    /* Tabs */
+    /* Tabs - Neobrutalismo */
     .tabs {
       display: flex;
-      background: rgba(0, 0, 0, 0.2);
-      border-bottom: 1px solid var(--glass-border)
+      background: var(--dark-2);
+      border-bottom: 3px solid var(--border-hard);
     }
 
     .tab {
@@ -224,31 +205,32 @@
       padding: 1.25rem 1rem;
       text-align: center;
       cursor: pointer;
-      font-weight: 500;
+      font-weight: 700;
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
       color: var(--text-muted);
-      transition: all .3s var(--ease-smooth);
+      transition: all .15s var(--ease-smooth);
       position: relative;
+      border-right: 1px solid var(--border-hard);
+    }
+
+    .tab:last-child {
+      border-right: none;
     }
 
     .tab:hover {
       color: var(--text);
-      background: rgba(255, 255, 255, 0.02)
+      background: var(--dark-3);
     }
 
     .tab.active {
-      color: var(--accent)
+      color: var(--dark-1);
+      background: var(--primary);
     }
 
     .tab.active::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 50%;
-      height: 3px;
-      background: linear-gradient(90deg, var(--primary), var(--accent));
-      border-radius: 3px 3px 0 0;
+      display: none;
     }
 
     /* Content */
@@ -278,25 +260,26 @@
 
     .section-title {
       font-family: var(--font-display);
-      font-size: 1.75rem;
-      font-weight: 600;
+      font-size: 2rem;
+      font-weight: 900;
       margin-bottom: 1.5rem;
       display: flex;
       align-items: center;
       gap: .75rem;
-      transition: letter-spacing .3s;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
     .section-title:hover {
-      letter-spacing: 1px
+      color: var(--primary);
     }
 
     .section-title::before {
       content: '';
-      width: 4px;
-      height: 28px;
-      background: linear-gradient(180deg, var(--primary), var(--accent));
-      border-radius: 2px
+      width: 6px;
+      height: 32px;
+      background: var(--primary);
     }
 
     /* Bento Grid */
@@ -348,68 +331,79 @@
       margin-bottom: 1.25rem
     }
 
-    /* Buttons */
+    /* Buttons - Neobrutalismo */
     .btn {
       padding: 1rem 1.75rem;
-      border-radius: 16px;
+      border-radius: 0;
       font-size: 1rem;
-      font-weight: 600;
-      border: none;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border: 3px solid var(--border-hard);
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: .5rem;
-      transition: all .3s var(--ease-bounce);
+      transition: all .1s ease;
       position: relative;
-      overflow: hidden;
+      box-shadow: var(--shadow-brutal-sm);
+    }
+
+    .btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 4px 4px 0 var(--primary);
     }
 
     .btn:active {
-      transform: scale(.95)
+      transform: translate(2px, 2px);
+      box-shadow: none;
     }
 
     .btn--primary {
-      background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
-      color: #fff;
-      box-shadow: 0 8px 24px -8px var(--primary-glow);
+      background: var(--primary);
+      color: var(--dark-1);
+      border-color: var(--primary);
     }
 
     .btn--primary:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 32px -8px var(--primary-glow)
+      background: #fde047;
     }
 
     .btn--secondary {
-      background: rgba(255, 255, 255, 0.05);
+      background: var(--dark-3);
       color: var(--text);
-      border: 1px solid var(--glass-border)
+      border-color: var(--border-hard);
     }
 
     .btn--secondary:hover {
-      background: rgba(255, 255, 255, 0.1);
-      border-color: var(--glass-highlight)
+      border-color: var(--text);
+      box-shadow: 4px 4px 0 var(--text);
     }
 
     .btn--accent {
-      background: linear-gradient(135deg, var(--accent) 0%, #22d3ee 100%);
-      color: #0f172a
+      background: var(--accent);
+      color: var(--dark-1);
+      border-color: var(--accent);
     }
 
     .btn--danger {
-      background: linear-gradient(135deg, var(--danger) 0%, #f87171 100%);
-      color: #fff
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
     }
 
     .btn--warning {
-      background: linear-gradient(135deg, var(--warning) 0%, #fbbf24 100%);
-      color: #0f172a
+      background: var(--warning);
+      color: var(--dark-1);
+      border-color: var(--warning);
     }
 
     .btn--highlight {
-      background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
-      color: #78350f;
-      font-weight: 700
+      background: var(--primary);
+      color: var(--dark-1);
+      border-color: var(--primary);
+      font-weight: 900;
     }
 
     .btn--full {
@@ -420,65 +414,68 @@
       flex: 1
     }
 
-    /* Result Cards - 3D Depth */
+    /* Result Cards - Neobrutalismo */
     .result-card {
-      background: linear-gradient(145deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
-      border: 1px solid var(--glass-border);
-      border-radius: 20px;
+      background: var(--dark-3);
+      border: 3px solid var(--border-hard);
       padding: 1.5rem;
-      transition: all .4s var(--ease-smooth);
-      transform-style: preserve-3d;
-      perspective: 1000px;
+      transition: all .15s ease;
+      box-shadow: var(--shadow-brutal-sm);
     }
 
     .result-card:hover {
-      border-color: rgba(139, 92, 246, 0.3);
-      transform: translateY(-4px) translateZ(20px);
-      box-shadow: 0 20px 40px -20px rgba(139, 92, 246, 0.3);
+      border-color: var(--primary);
+      transform: translate(-2px, -2px);
+      box-shadow: 4px 4px 0 var(--primary);
     }
 
     .result-title {
       font-family: var(--font-display);
-      font-size: 1.2rem;
-      font-weight: 600;
-      margin-bottom: .25rem
+      font-size: 1.25rem;
+      font-weight: 800;
+      margin-bottom: .5rem;
+      color: var(--primary);
     }
 
     .result-meta {
       font-size: .875rem;
       color: var(--text-muted);
-      margin-bottom: .5rem
+      margin-bottom: .75rem;
+      font-family: monospace;
     }
 
     .result-link {
       color: var(--accent);
       text-decoration: none;
-      font-weight: 500;
-      transition: color .3s
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: .875rem;
+      letter-spacing: 1px;
     }
 
     .result-link:hover {
-      color: #22d3ee
+      color: #fff;
+      text-decoration: underline;
     }
 
     .result-actions {
       display: flex;
       flex-wrap: wrap;
       gap: .5rem;
-      margin-top: 1rem
+      margin-top: 1rem;
     }
 
     .result-actions .btn {
-      padding: .625rem 1rem;
-      font-size: .875rem
+      padding: .5rem .75rem;
+      font-size: .75rem;
     }
 
     .codes-pre {
       margin-top: 1rem;
       padding: 1rem;
-      background: rgba(0, 0, 0, 0.5);
-      border-radius: 12px;
-      font-family: 'Fira Code', monospace;
+      background: var(--dark-1);
+      border: 2px solid var(--border-hard);
+      font-family: 'Courier New', monospace;
       font-size: .85rem;
       color: var(--accent);
       max-height: 180px;
@@ -486,7 +483,7 @@
     }
 
     .codes-pre.hidden {
-      display: none
+      display: none;
     }
 
     /* Overlay & Modal */

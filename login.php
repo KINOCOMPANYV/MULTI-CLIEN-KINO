@@ -86,23 +86,28 @@ error_log('✅ [INDEX] Renderizando vista');
         }
 
         :root {
-            --primary: #8b5cf6;
-            --primary-glow: rgba(139, 92, 246, 0.4);
-            --accent: #06b6d4;
-            --accent-glow: rgba(6, 182, 212, 0.3);
-            --glass: rgba(255, 255, 255, 0.03);
-            --glass-bg: rgba(255, 255, 255, 0.08);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-highlight: rgba(255, 255, 255, 0.12);
-            --text-primary: #f1f5f9;
-            --text-secondary: #94a3b8;
-            --dark-1: #030712;
-            --dark-2: #0f172a;
-            --font-display: 'Playfair Display', Georgia, serif;
+            /* Neobrutalismo: Alto contraste, colores vibrantes */
+            --primary: #facc15;
+            --primary-glow: rgba(250, 204, 21, 0.4);
+            --accent: #00f0ff;
+            --accent-glow: rgba(0, 240, 255, 0.3);
+            --success: #22c55e;
+            --warning: #fb923c;
+            --danger: #f43f5e;
+            --bg-card: #0a0a0a;
+            --border-hard: #333;
+            --border-accent: var(--primary);
+            --text: #ffffff;
+            --text-muted: #a1a1aa;
+            --dark-1: #000000;
+            --dark-2: #0a0a0a;
+            --dark-3: #171717;
+            --font-display: 'Inter', -apple-system, sans-serif;
             --font-body: 'Inter', -apple-system, sans-serif;
             --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
             --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-            --shadow-glow: 0 0 40px rgba(139, 92, 246, 0.3);
+            --shadow-brutal: 8px 8px 0 var(--primary);
+            --shadow-brutal-sm: 4px 4px 0 var(--primary);
         }
 
         body {
@@ -113,7 +118,7 @@ error_log('✅ [INDEX] Renderizando vista');
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: var(--text-primary);
+            color: var(--text);
             overflow-x: hidden;
             position: relative;
         }
@@ -125,44 +130,35 @@ error_log('✅ [INDEX] Renderizando vista');
             pointer-events: none;
             z-index: 0;
             background:
-                radial-gradient(ellipse 80% 50% at 20% 40%, rgba(139, 92, 246, 0.15), transparent),
-                radial-gradient(ellipse 60% 40% at 80% 60%, rgba(6, 182, 212, 0.12), transparent),
-                radial-gradient(ellipse 50% 50% at 50% 100%, rgba(236, 72, 153, 0.08), transparent);
+                radial-gradient(ellipse 80% 50% at 20% 40%, rgba(250, 204, 21, 0.1), transparent),
+                radial-gradient(ellipse 60% 40% at 80% 60%, rgba(0, 240, 255, 0.1), transparent);
         }
 
         .orb {
             position: fixed;
             border-radius: 50%;
-            filter: blur(80px);
+            filter: blur(100px);
             pointer-events: none;
             z-index: 0;
             animation: float 20s ease-in-out infinite;
+            opacity: 0.5;
         }
 
         .orb-1 {
-            width: 400px;
-            height: 400px;
-            background: rgba(139, 92, 246, 0.2);
-            top: -100px;
-            left: -100px;
+            width: 500px;
+            height: 500px;
+            background: var(--primary);
+            top: -200px;
+            left: -200px;
         }
 
         .orb-2 {
-            width: 300px;
-            height: 300px;
-            background: rgba(6, 182, 212, 0.15);
-            bottom: 10%;
-            right: -50px;
-            animation-delay: -7s;
-        }
-
-        .orb-3 {
-            width: 200px;
-            height: 200px;
-            background: rgba(236, 72, 153, 0.12);
-            top: 50%;
-            left: 30%;
-            animation-delay: -14s;
+            width: 400px;
+            height: 400px;
+            background: var(--accent);
+            bottom: -100px;
+            right: -100px;
+            animation-delay: -5s;
         }
 
         @keyframes float {
@@ -177,56 +173,31 @@ error_log('✅ [INDEX] Renderizando vista');
             }
         }
 
-        /* Liquid Glass Card */
+        /* Neobrutalist Card */
         .card {
             position: relative;
             z-index: 1;
-            background: linear-gradient(135deg, var(--glass) 0%, rgba(255, 255, 255, 0.01) 100%);
-            backdrop-filter: blur(24px) saturate(180%);
-            -webkit-backdrop-filter: blur(24px) saturate(180%);
-            border: 1px solid var(--glass-border);
-            box-shadow:
-                0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-                0 20px 50px -12px rgba(0, 0, 0, 0.5),
-                0 0 80px -20px var(--primary-glow);
+            background: var(--bg-card);
+            border: 4px solid var(--border-hard);
+            box-shadow: var(--shadow-brutal);
             padding: 3rem;
-            border-radius: 32px;
             width: 100%;
-            max-width: 450px;
+            max-width: 480px;
             margin: 1rem;
-            animation: cardIn 0.8s var(--ease-smooth);
-            overflow: hidden;
+            animation: cardIn 0.6s var(--ease-bounce);
+            transition: all 0.2s ease;
         }
 
-        .card::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
-            pointer-events: none;
-        }
-
-        .card::after {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.06) 0%, transparent 50%);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity .5s;
-        }
-
-        .card:hover::after {
-            opacity: 1;
+        .card:hover {
+            border-color: var(--primary);
+            transform: translate(-4px, -4px);
+            box-shadow: 12px 12px 0 var(--primary);
         }
 
         @keyframes cardIn {
             from {
                 opacity: 0;
-                transform: translateY(40px) scale(.96);
+                transform: translateY(40px) scale(0.9);
             }
 
             to {
@@ -237,247 +208,156 @@ error_log('✅ [INDEX] Renderizando vista');
 
         .logo-container {
             text-align: center;
-            margin-bottom: 2rem;
+            margin-bottom: 2.5rem;
         }
 
         .logo-icon {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
-            border-radius: 20px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2.5rem;
+            font-size: 4rem;
             margin-bottom: 1rem;
-            box-shadow: 0 10px 30px var(--primary-glow);
-            transition: transform 0.3s var(--ease-bounce);
+            display: inline-block;
+            animation: bounceIcon 2s infinite;
         }
 
-        .logo-icon:hover {
-            transform: scale(1.05) rotate(-3deg);
+        @keyframes bounceIcon {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
         }
 
         h1 {
             font-family: var(--font-display);
-            font-size: 2rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--primary) 100%);
-            background-size: 200% auto;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-align: center;
+            font-size: 3rem;
+            font-weight: 900;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 4px 4px 0 var(--dark-1);
             margin-bottom: 0.5rem;
-            animation: shimmer 3s linear infinite;
-        }
-
-        @keyframes shimmer {
-            to {
-                background-position: 200% center;
-            }
+            line-height: 1;
         }
 
         .subtitle {
             text-align: center;
-            color: var(--text-secondary);
+            color: var(--text-muted);
             margin-bottom: 2rem;
+            font-family: monospace;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         label {
             display: block;
             margin-top: 1.5rem;
-            font-weight: 600;
-            color: var(--text-secondary);
+            font-weight: 700;
+            color: var(--text);
             font-size: 0.9rem;
             margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         select,
         input {
             width: 100%;
             padding: 1rem 1.25rem;
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            color: var(--text-primary);
-            font-size: 1rem;
-            font-family: inherit;
-            transition: var(--transition);
+            background: var(--dark-1);
+            border: 3px solid var(--border-hard);
+            border-radius: 0;
+            color: var(--text);
+            font-size: 1.1rem;
+            font-family: monospace;
             outline: none;
+            transition: all 0.15s ease;
+            box-shadow: 4px 4px 0 rgba(255, 255, 255, 0.05);
         }
 
-        select {
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1.25rem;
-            padding-right: 3rem;
-        }
-
-        select option {
-            background: #1e293b;
-            color: var(--text-primary);
-        }
-
-        input:focus,
-        select:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 4px var(--accent-glow), 0 0 30px -10px var(--accent);
-        }
-
-        input::placeholder {
-            color: var(--text-secondary);
+        select:focus,
+        input:focus {
+            border-color: var(--primary);
+            background: #000;
+            box-shadow: 6px 6px 0 var(--primary);
+            transform: translate(-2px, -2px);
         }
 
         button {
             width: 100%;
-            margin-top: 2rem;
-            padding: 1rem 1.75rem;
-            border: none;
-            border-radius: 16px;
-            background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
-            color: #fff;
-            font-size: 1.1rem;
-            font-weight: 700;
+            margin-top: 2.5rem;
+            padding: 1.25rem;
+            border: 3px solid var(--border-hard);
+            border-radius: 0;
+            background: var(--primary);
+            color: var(--dark-1);
+            font-size: 1.2rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
             cursor: pointer;
-            transition: all 0.3s var(--ease-bounce);
-            position: relative;
-            overflow: hidden;
-            box-shadow: 0 8px 24px -8px var(--primary-glow);
-        }
-
-        button::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            transform: translateX(-100%);
-            transition: transform 0.5s;
+            transition: all 0.15s ease;
+            box-shadow: var(--shadow-brutal-sm);
         }
 
         button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 12px 32px -8px var(--primary-glow);
-        }
-
-        button:hover::before {
-            transform: translateX(100%);
+            background: #fde047;
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0 #fff;
+            border-color: #000;
         }
 
         button:active {
-            transform: scale(.95);
+            transform: translate(2px, 2px);
+            box-shadow: none;
         }
 
         .error {
             margin-top: 1.5rem;
             padding: 1rem;
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            border-radius: 12px;
-            color: #fca5a5;
+            background: var(--danger);
+            color: white;
+            border: 3px solid #000;
+            font-weight: 700;
+            text-transform: uppercase;
             text-align: center;
-            animation: shake 0.5s ease;
-        }
-
-        @keyframes shake {
-
-            0%,
-            100% {
-                transform: translateX(0);
-            }
-
-            25% {
-                transform: translateX(-10px);
-            }
-
-            75% {
-                transform: translateX(10px);
-            }
+            box-shadow: 4px 4px 0 #fff;
         }
 
         .logout {
             text-align: center;
-            margin-top: 1.5rem;
+            margin-top: 2rem;
         }
 
         .logout a {
             color: var(--accent);
             text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s var(--ease-smooth);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
         }
 
         .logout a:hover {
-            color: #22d3ee;
-            text-shadow: 0 0 12px var(--accent-glow);
+            color: #fff;
+            border-bottom-color: var(--accent);
         }
 
         .footer {
             position: fixed;
             bottom: 1.5rem;
             text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            z-index: 1;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-family: monospace;
+            text-transform: uppercase;
         }
 
         .footer strong {
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 700;
-        }
-
-        /* Particles - now using orbs from ambient */
-        .particle {
-            position: fixed;
-            width: 4px;
-            height: 4px;
-            background: var(--accent);
-            border-radius: 50%;
-            opacity: 0.3;
-            pointer-events: none;
-            animation: particleFloat 15s infinite;
-        }
-
-        @keyframes particleFloat {
-
-            0%,
-            100% {
-                transform: translateY(100vh) rotate(0deg);
-                opacity: 0;
-            }
-
-            10% {
-                opacity: 0.3;
-            }
-
-            90% {
-                opacity: 0.3;
-            }
-
-            100% {
-                transform: translateY(-100vh) rotate(720deg);
-                opacity: 0;
-            }
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary);
-            border-radius: 4px;
+            color: var(--primary);
         }
     </style>
 </head>
@@ -487,10 +367,6 @@ error_log('✅ [INDEX] Renderizando vista');
     <div class="ambient"></div>
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
-
-    <!-- Particles -->
-    <div id="particles"></div>
 
     <div class="card">
         <div class="logo-container">
@@ -540,28 +416,6 @@ error_log('✅ [INDEX] Renderizando vista');
                 e.preventDefault();
             }
         });
-
-        // Mouse light effect for Liquid Glass
-        document.querySelectorAll('.card').forEach(el => {
-            el.addEventListener('mousemove', e => {
-                const r = el.getBoundingClientRect();
-                el.style.setProperty('--mouse-x', ((e.clientX - r.left) / r.width * 100) + '%');
-                el.style.setProperty('--mouse-y', ((e.clientY - r.top) / r.height * 100) + '%');
-            });
-        });
-
-        // Create particles
-        (function () {
-            const container = document.getElementById('particles');
-            for (let i = 0; i < 12; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.style.left = Math.random() * 100 + '%';
-                p.style.animationDelay = Math.random() * 15 + 's';
-                p.style.animationDuration = (15 + Math.random() * 10) + 's';
-                container.appendChild(p);
-            }
-        })();
     </script>
 </body>
 
