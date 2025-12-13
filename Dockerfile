@@ -15,9 +15,8 @@ RUN apt-get update && apt-get install -y \
 # 2. Instalar librería PyPDF2 para el script de búsqueda
 RUN pip3 install PyPDF2 --break-system-packages
 
-# 3. Arreglar MPM y habilitar mod_rewrite (eliminar MPMs conflictivos físicamente)
-RUN rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.* \
-    && a2enmod mpm_prefork rewrite
+# 3. Habilitar mod_rewrite de Apache
+RUN a2enmod rewrite
 
 # 4. Copiar código
 COPY . /var/www/html/
@@ -26,6 +25,9 @@ COPY . /var/www/html/
 RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/uploads
 
-# 6. EL ARREGLO DEL ERROR 502 (Importante)
-# Cambia el puerto 80 por el puerto de Railway ($PORT) justo al arrancar
-CMD sed -i "s/80/$PORT/g" /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf && docker-php-entrypoint apache2-foreground
+# 6. Arreglar MPM + Puerto de Railway al arrancar
+# Se elimina cualquier MPM extra y se configura el puerto dinámico
+CMD rm -f /etc/apache2/mods-enabled/mpm_event.* /etc/apache2/mods-enabled/mpm_worker.* 2>/dev/null; \
+    a2enmod mpm_prefork 2>/dev/null || true; \
+    sed -i "s/80/$PORT/g" /etc/apache2/sites-available/000-default.conf /etc/apache2/ports.conf; \
+    docker-php-entrypoint apache2-foreground
