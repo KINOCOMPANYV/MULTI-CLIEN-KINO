@@ -74,7 +74,8 @@ error_log('✅ [INDEX] Renderizando vista');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <title>Acceso al Buscador</title>
     <style>
@@ -85,72 +86,152 @@ error_log('✅ [INDEX] Renderizando vista');
         }
 
         :root {
-            --color-primary: #6366f1;
-            --color-primary-dark: #4f46e5;
-            --color-accent: #06b6d4;
+            --primary: #8b5cf6;
+            --primary-glow: rgba(139, 92, 246, 0.4);
+            --accent: #06b6d4;
+            --accent-glow: rgba(6, 182, 212, 0.3);
+            --glass: rgba(255, 255, 255, 0.03);
             --glass-bg: rgba(255, 255, 255, 0.08);
-            --glass-border: rgba(255, 255, 255, 0.12);
-            --text-primary: #f8fafc;
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-highlight: rgba(255, 255, 255, 0.12);
+            --text-primary: #f1f5f9;
             --text-secondary: #94a3b8;
-            --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            --gradient-dark: linear-gradient(180deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
-            --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.3);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --dark-1: #030712;
+            --dark-2: #0f172a;
+            --font-display: 'Playfair Display', Georgia, serif;
+            --font-body: 'Inter', -apple-system, sans-serif;
+            --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow-glow: 0 0 40px rgba(139, 92, 246, 0.3);
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--gradient-dark);
+            font-family: var(--font-body);
+            background: var(--dark-1);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             color: var(--text-primary);
-            overflow: hidden;
+            overflow-x: hidden;
             position: relative;
         }
 
-        body::before {
-            content: '';
+        /* Ambient Background */
+        .ambient {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background:
-                radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
-                radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+            inset: 0;
             pointer-events: none;
             z-index: 0;
+            background:
+                radial-gradient(ellipse 80% 50% at 20% 40%, rgba(139, 92, 246, 0.15), transparent),
+                radial-gradient(ellipse 60% 40% at 80% 60%, rgba(6, 182, 212, 0.12), transparent),
+                radial-gradient(ellipse 50% 50% at 50% 100%, rgba(236, 72, 153, 0.08), transparent);
         }
 
+        .orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .orb-1 {
+            width: 400px;
+            height: 400px;
+            background: rgba(139, 92, 246, 0.2);
+            top: -100px;
+            left: -100px;
+        }
+
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: rgba(6, 182, 212, 0.15);
+            bottom: 10%;
+            right: -50px;
+            animation-delay: -7s;
+        }
+
+        .orb-3 {
+            width: 200px;
+            height: 200px;
+            background: rgba(236, 72, 153, 0.12);
+            top: 50%;
+            left: 30%;
+            animation-delay: -14s;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(30px, -30px) scale(1.1);
+            }
+        }
+
+        /* Liquid Glass Card */
         .card {
             position: relative;
             z-index: 1;
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
+            background: linear-gradient(135deg, var(--glass) 0%, rgba(255, 255, 255, 0.01) 100%);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
             border: 1px solid var(--glass-border);
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+                0 20px 50px -12px rgba(0, 0, 0, 0.5),
+                0 0 80px -20px var(--primary-glow);
             padding: 3rem;
             border-radius: 32px;
-            box-shadow: var(--shadow-glow), 0 25px 50px rgba(0, 0, 0, 0.5);
             width: 100%;
             max-width: 450px;
             margin: 1rem;
-            animation: cardEntrance 0.6s ease;
+            animation: cardIn 0.8s var(--ease-smooth);
+            overflow: hidden;
         }
 
-        @keyframes cardEntrance {
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .card::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.06) 0%, transparent 50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity .5s;
+        }
+
+        .card:hover::after {
+            opacity: 1;
+        }
+
+        @keyframes cardIn {
             from {
-                transform: scale(0.9) translateY(20px);
                 opacity: 0;
+                transform: translateY(40px) scale(.96);
             }
 
             to {
-                transform: scale(1) translateY(0);
                 opacity: 1;
+                transform: none;
             }
         }
 
@@ -162,25 +243,39 @@ error_log('✅ [INDEX] Renderizando vista');
         .logo-icon {
             width: 80px;
             height: 80px;
-            background: var(--gradient-1);
+            background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
             border-radius: 20px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-size: 2.5rem;
             margin-bottom: 1rem;
-            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 10px 30px var(--primary-glow);
+            transition: transform 0.3s var(--ease-bounce);
+        }
+
+        .logo-icon:hover {
+            transform: scale(1.05) rotate(-3deg);
         }
 
         h1 {
-            font-size: 1.75rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #fff 0%, var(--color-accent) 100%);
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--primary) 100%);
+            background-size: 200% auto;
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             text-align: center;
             margin-bottom: 0.5rem;
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            to {
+                background-position: 200% center;
+            }
         }
 
         .subtitle {
@@ -229,8 +324,8 @@ error_log('✅ [INDEX] Renderizando vista');
 
         input:focus,
         select:focus {
-            border-color: var(--color-accent);
-            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-glow), 0 0 30px -10px var(--accent);
         }
 
         input::placeholder {
@@ -240,18 +335,18 @@ error_log('✅ [INDEX] Renderizando vista');
         button {
             width: 100%;
             margin-top: 2rem;
-            padding: 1rem;
+            padding: 1rem 1.75rem;
             border: none;
-            border-radius: 12px;
-            background: var(--gradient-1);
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
             color: #fff;
             font-size: 1.1rem;
             font-weight: 700;
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.3s var(--ease-bounce);
             position: relative;
             overflow: hidden;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 8px 24px -8px var(--primary-glow);
         }
 
         button::before {
@@ -264,8 +359,8 @@ error_log('✅ [INDEX] Renderizando vista');
         }
 
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px -8px var(--primary-glow);
         }
 
         button:hover::before {
@@ -273,7 +368,7 @@ error_log('✅ [INDEX] Renderizando vista');
         }
 
         button:active {
-            transform: translateY(0);
+            transform: scale(.95);
         }
 
         .error {
@@ -309,15 +404,15 @@ error_log('✅ [INDEX] Renderizando vista');
         }
 
         .logout a {
-            color: var(--color-accent);
+            color: var(--accent);
             text-decoration: none;
             font-weight: 500;
-            transition: var(--transition);
+            transition: all 0.3s var(--ease-smooth);
         }
 
         .logout a:hover {
             color: #22d3ee;
-            text-decoration: underline;
+            text-shadow: 0 0 12px var(--accent-glow);
         }
 
         .footer {
@@ -325,31 +420,31 @@ error_log('✅ [INDEX] Renderizando vista');
             bottom: 1.5rem;
             text-align: center;
             color: var(--text-secondary);
-            font-size: 0.875rem;
+            font-size: 0.9rem;
             z-index: 1;
         }
 
         .footer strong {
-            background: var(--gradient-3);
+            background: linear-gradient(90deg, var(--primary), var(--accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
             font-weight: 700;
         }
 
-        /* Particles */
+        /* Particles - now using orbs from ambient */
         .particle {
             position: fixed;
             width: 4px;
             height: 4px;
-            background: var(--color-accent);
+            background: var(--accent);
             border-radius: 50%;
             opacity: 0.3;
             pointer-events: none;
-            animation: float 15s infinite;
+            animation: particleFloat 15s infinite;
         }
 
-        @keyframes float {
+        @keyframes particleFloat {
 
             0%,
             100% {
@@ -381,13 +476,19 @@ error_log('✅ [INDEX] Renderizando vista');
         }
 
         ::-webkit-scrollbar-thumb {
-            background: var(--color-primary);
+            background: var(--primary);
             border-radius: 4px;
         }
     </style>
 </head>
 
 <body>
+    <!-- Ambient Background -->
+    <div class="ambient"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+
     <!-- Particles -->
     <div id="particles"></div>
 
@@ -438,6 +539,15 @@ error_log('✅ [INDEX] Renderizando vista');
             if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) || (e.ctrlKey && e.key === 'u')) {
                 e.preventDefault();
             }
+        });
+
+        // Mouse light effect for Liquid Glass
+        document.querySelectorAll('.card').forEach(el => {
+            el.addEventListener('mousemove', e => {
+                const r = el.getBoundingClientRect();
+                el.style.setProperty('--mouse-x', ((e.clientX - r.left) / r.width * 100) + '%');
+                el.style.setProperty('--mouse-y', ((e.clientY - r.top) / r.height * 100) + '%');
+            });
         });
 
         // Create particles

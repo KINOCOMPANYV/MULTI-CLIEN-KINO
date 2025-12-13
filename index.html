@@ -3,314 +3,220 @@
 
 <head>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-  </script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script>
-    (function () {
-      const orig = console.error;
-      console.error = function (...args) {
-        if (args[0] && typeof args[0] === 'string' && args[0].includes('Expected number')) return;
-        orig.apply(console, args);
-      };
-      window.onerror = function () { return true; };
-    })();
-  </script>
-
+  <script>(function () { const o = console.error; console.error = function (...a) { if (a[0] && typeof a[0] === 'string' && a[0].includes('Expected number')) return; o.apply(console, a); }; window.onerror = function () { return true; }; })();</script>
   <meta charset="UTF-8" />
   <meta name="google" content="notranslate">
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
     rel="stylesheet">
   <title>Buscador de Documentos</title>
-
   <style>
     * {
       margin: 0;
       padding: 0;
-      box-sizing: border-box;
+      box-sizing: border-box
     }
 
     :root {
-      --color-primary: #6366f1;
-      --color-primary-dark: #4f46e5;
-      --color-secondary: #1e293b;
-      --color-accent: #06b6d4;
-      --color-success: #10b981;
-      --color-warning: #f59e0b;
-      --color-danger: #ef4444;
-      --glass-bg: rgba(255, 255, 255, 0.08);
-      --glass-border: rgba(255, 255, 255, 0.12);
-      --text-primary: #f8fafc;
-      --text-secondary: #94a3b8;
-      --gradient-1: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      --gradient-2: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-      --gradient-3: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-      --gradient-dark: linear-gradient(180deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
-      --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.3);
-      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --primary: #8b5cf6;
+      --primary-glow: rgba(139, 92, 246, 0.4);
+      --accent: #06b6d4;
+      --accent-glow: rgba(6, 182, 212, 0.3);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --glass: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-highlight: rgba(255, 255, 255, 0.12);
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --dark-1: #030712;
+      --dark-2: #0f172a;
+      --dark-3: #1e293b;
+      --font-display: 'Playfair Display', Georgia, serif;
+      --font-body: 'Inter', -apple-system, sans-serif;
+      --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    html {
+      scroll-behavior: smooth
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--gradient-dark);
+      font-family: var(--font-body);
+      background: var(--dark-1);
+      color: var(--text);
       min-height: 100vh;
-      color: var(--text-primary);
       overflow-x: hidden;
-      position: relative;
     }
 
-    body::before {
-      content: '';
+    /* Ambient Background */
+    .ambient {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background:
-        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(6, 182, 212, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(139, 92, 246, 0.1) 0%, transparent 40%);
+      inset: 0;
       pointer-events: none;
       z-index: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 40%, rgba(139, 92, 246, 0.15), transparent),
+        radial-gradient(ellipse 60% 40% at 80% 60%, rgba(6, 182, 212, 0.12), transparent),
+        radial-gradient(ellipse 50% 50% at 50% 100%, rgba(236, 72, 153, 0.08), transparent);
     }
 
-    .app-container {
+    .orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+      z-index: 0;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .orb-1 {
+      width: 400px;
+      height: 400px;
+      background: rgba(139, 92, 246, 0.2);
+      top: -100px;
+      left: -100px
+    }
+
+    .orb-2 {
+      width: 300px;
+      height: 300px;
+      background: rgba(6, 182, 212, 0.15);
+      bottom: 10%;
+      right: -50px;
+      animation-delay: -7s
+    }
+
+    .orb-3 {
+      width: 200px;
+      height: 200px;
+      background: rgba(236, 72, 153, 0.12);
+      top: 50%;
+      left: 30%;
+      animation-delay: -14s
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translate(0, 0) scale(1)
+      }
+
+      50% {
+        transform: translate(30px, -30px) scale(1.1)
+      }
+    }
+
+    .app {
       position: relative;
       z-index: 1;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 2rem;
+      padding: 1.5rem
     }
 
-    /* OVERLAY STYLES */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(12px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .overlay.hidden {
-      display: none;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-      }
-
-      to {
-        opacity: 1;
-      }
-    }
-
-    /* MODAL GLASS */
-    .modal {
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
+    /* Liquid Glass */
+    .liquid-glass {
+      background: linear-gradient(135deg, var(--glass) 0%, rgba(255, 255, 255, 0.01) 100%);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
       border: 1px solid var(--glass-border);
-      border-radius: 24px;
-      max-width: 400px;
-      width: 90%;
-      padding: 2.5rem;
-      box-shadow: var(--shadow-glow), 0 25px 50px rgba(0, 0, 0, 0.5);
-      animation: slideUp 0.4s ease;
-    }
-
-    @keyframes slideUp {
-      from {
-        transform: translateY(30px);
-        opacity: 0;
-      }
-
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-
-    .modal h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      background: var(--gradient-3);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 0.5rem;
-    }
-
-    .modal p {
-      color: var(--text-secondary);
-      margin-bottom: 1.5rem;
-    }
-
-    .modal input {
-      width: 100%;
-      padding: 1rem 1.25rem;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--glass-border);
-      border-radius: 12px;
-      color: var(--text-primary);
-      font-size: 1rem;
-      transition: var(--transition);
-      outline: none;
-    }
-
-    .modal input:focus {
-      border-color: var(--color-accent);
-      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
-    }
-
-    .modal input::placeholder {
-      color: var(--text-secondary);
-    }
-
-    /* BUTTONS */
-    .btn {
-      padding: 0.875rem 1.5rem;
-      border-radius: 12px;
-      font-size: 1rem;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      transition: var(--transition);
-      text-decoration: none;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+        0 20px 50px -12px rgba(0, 0, 0, 0.5),
+        0 0 80px -20px var(--primary-glow);
       position: relative;
       overflow: hidden;
     }
 
-    .btn::before {
+    .liquid-glass::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-      transform: translateX(-100%);
-      transition: transform 0.5s;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+      pointer-events: none;
     }
 
-    .btn:hover::before {
-      transform: translateX(100%);
+    .liquid-glass::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255, 255, 255, 0.06) 0%, transparent 50%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .5s;
     }
 
-    .btn--primary {
-      background: var(--gradient-1);
-      color: white;
-      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+    .liquid-glass:hover::after {
+      opacity: 1
     }
 
-    .btn--primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
-    }
-
-    .btn--secondary {
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--text-primary);
-      border: 1px solid var(--glass-border);
-    }
-
-    .btn--secondary:hover {
-      background: rgba(255, 255, 255, 0.15);
-      border-color: rgba(255, 255, 255, 0.25);
-    }
-
-    .btn--accent {
-      background: var(--gradient-3);
-      color: #0f172a;
-    }
-
-    .btn--danger {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-      color: white;
-    }
-
-    .btn--warning {
-      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-      color: #0f172a;
-    }
-
-    .btn--highlight {
-      background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
-      color: #78350f;
-      font-weight: 700;
-    }
-
-    .btn--full {
-      width: 100%;
-    }
-
-    .btn--flex1 {
-      flex: 1;
-    }
-
-    /* MAIN CARD */
+    /* Main Card */
     .main-card {
       width: 100%;
-      max-width: 1000px;
-      background: var(--glass-bg);
-      backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border);
+      max-width: 1100px;
       border-radius: 32px;
-      overflow: hidden;
-      box-shadow: var(--shadow-glow), 0 25px 80px rgba(0, 0, 0, 0.4);
-      animation: cardEntrance 0.6s ease;
-    }
-
-    @keyframes cardEntrance {
-      from {
-        transform: scale(0.95);
-        opacity: 0;
-      }
-
-      to {
-        transform: scale(1);
-        opacity: 1;
-      }
+      animation: cardIn .8s var(--ease-smooth)
     }
 
     .main-card.hidden {
-      display: none;
+      display: none
     }
 
-    /* HEADER */
-    .app-header {
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(6, 182, 212, 0.1) 100%);
+    @keyframes cardIn {
+      from {
+        opacity: 0;
+        transform: translateY(40px) scale(.96)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    /* Header */
+    .header {
+      padding: 2rem 2.5rem;
       border-bottom: 1px solid var(--glass-border);
-      padding: 1.5rem 2rem;
-      text-align: center;
+      text-align: center
     }
 
-    .app-header h1 {
-      font-size: 1.75rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, #fff 0%, var(--color-accent) 100%);
+    .header h1 {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff 0%, var(--accent) 50%, var(--primary) 100%);
+      background-size: 200% auto;
       -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
       background-clip: text;
-      letter-spacing: -0.5px;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 3s linear infinite;
     }
 
-    /* NAVIGATION TABS */
-    .nav-tabs {
+    @keyframes shimmer {
+      to {
+        background-position: 200% center
+      }
+    }
+
+    /* Tabs */
+    .tabs {
       display: flex;
       background: rgba(0, 0, 0, 0.2);
-      border-bottom: 1px solid var(--glass-border);
-      overflow-x: auto;
+      border-bottom: 1px solid var(--glass-border)
     }
 
     .tab {
@@ -319,19 +225,18 @@
       text-align: center;
       cursor: pointer;
       font-weight: 500;
-      color: var(--text-secondary);
-      transition: var(--transition);
+      color: var(--text-muted);
+      transition: all .3s var(--ease-smooth);
       position: relative;
-      white-space: nowrap;
     }
 
     .tab:hover {
-      color: var(--text-primary);
-      background: rgba(255, 255, 255, 0.03);
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.02)
     }
 
     .tab.active {
-      color: var(--color-accent);
+      color: var(--accent)
     }
 
     .tab.active::after {
@@ -340,55 +245,68 @@
       bottom: 0;
       left: 50%;
       transform: translateX(-50%);
-      width: 60%;
+      width: 50%;
       height: 3px;
-      background: var(--gradient-3);
+      background: linear-gradient(90deg, var(--primary), var(--accent));
       border-radius: 3px 3px 0 0;
     }
 
-    /* CONTENT */
+    /* Content */
     .content {
-      padding: 2rem;
+      padding: 2rem
     }
 
     .tab-content {
-      animation: contentFade 0.3s ease;
+      animation: fadeUp .4s var(--ease-smooth)
     }
 
     .tab-content.hidden {
-      display: none;
+      display: none
     }
 
-    @keyframes contentFade {
+    @keyframes fadeUp {
       from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(16px)
       }
 
       to {
         opacity: 1;
-        transform: translateY(0);
+        transform: none
       }
     }
 
     .section-title {
-      font-size: 1.5rem;
-      font-weight: 700;
+      font-family: var(--font-display);
+      font-size: 1.75rem;
+      font-weight: 600;
       margin-bottom: 1.5rem;
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: .75rem;
+      transition: letter-spacing .3s;
+    }
+
+    .section-title:hover {
+      letter-spacing: 1px
     }
 
     .section-title::before {
       content: '';
       width: 4px;
-      height: 24px;
-      background: var(--gradient-3);
-      border-radius: 2px;
+      height: 28px;
+      background: linear-gradient(180deg, var(--primary), var(--accent));
+      border-radius: 2px
     }
 
-    /* FORM ELEMENTS */
+    /* Bento Grid */
+    .bento {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem
+    }
+
+    /* Form Elements */
     textarea,
     input[type="text"],
     input[type="date"],
@@ -396,112 +314,232 @@
     select {
       width: 100%;
       padding: 1rem 1.25rem;
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0, 0, 0, 0.4);
       border: 1px solid var(--glass-border);
-      border-radius: 12px;
-      color: var(--text-primary);
+      border-radius: 16px;
+      color: var(--text);
       font-size: 1rem;
       font-family: inherit;
-      transition: var(--transition);
+      transition: all .3s var(--ease-smooth);
       outline: none;
     }
 
     textarea:focus,
     input:focus,
     select:focus {
-      border-color: var(--color-accent);
-      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.15);
-    }
-
-    textarea::placeholder,
-    input::placeholder {
-      color: var(--text-secondary);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-glow), 0 0 30px -10px var(--accent);
     }
 
     textarea {
       resize: vertical;
-      min-height: 150px;
+      min-height: 140px
     }
 
     label {
       display: block;
-      margin-bottom: 0.5rem;
+      margin-bottom: .5rem;
       font-weight: 500;
-      color: var(--text-secondary);
+      color: var(--text-muted);
+      font-size: .9rem
     }
 
     .form-group {
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.25rem
     }
 
-    /* RESULTS */
-    .result-card {
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid var(--glass-border);
+    /* Buttons */
+    .btn {
+      padding: 1rem 1.75rem;
       border-radius: 16px;
-      padding: 1.25rem;
-      margin-bottom: 1rem;
-      transition: var(--transition);
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .5rem;
+      transition: all .3s var(--ease-bounce);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:active {
+      transform: scale(.95)
+    }
+
+    .btn--primary {
+      background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
+      color: #fff;
+      box-shadow: 0 8px 24px -8px var(--primary-glow);
+    }
+
+    .btn--primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 32px -8px var(--primary-glow)
+    }
+
+    .btn--secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text);
+      border: 1px solid var(--glass-border)
+    }
+
+    .btn--secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--glass-highlight)
+    }
+
+    .btn--accent {
+      background: linear-gradient(135deg, var(--accent) 0%, #22d3ee 100%);
+      color: #0f172a
+    }
+
+    .btn--danger {
+      background: linear-gradient(135deg, var(--danger) 0%, #f87171 100%);
+      color: #fff
+    }
+
+    .btn--warning {
+      background: linear-gradient(135deg, var(--warning) 0%, #fbbf24 100%);
+      color: #0f172a
+    }
+
+    .btn--highlight {
+      background: linear-gradient(135deg, #fcd34d 0%, #f59e0b 100%);
+      color: #78350f;
+      font-weight: 700
+    }
+
+    .btn--full {
+      width: 100%
+    }
+
+    .btn--flex1 {
+      flex: 1
+    }
+
+    /* Result Cards - 3D Depth */
+    .result-card {
+      background: linear-gradient(145deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 1.5rem;
+      transition: all .4s var(--ease-smooth);
+      transform-style: preserve-3d;
+      perspective: 1000px;
     }
 
     .result-card:hover {
-      border-color: rgba(6, 182, 212, 0.3);
-      transform: translateX(4px);
+      border-color: rgba(139, 92, 246, 0.3);
+      transform: translateY(-4px) translateZ(20px);
+      box-shadow: 0 20px 40px -20px rgba(139, 92, 246, 0.3);
     }
 
     .result-title {
-      font-size: 1.1rem;
+      font-family: var(--font-display);
+      font-size: 1.2rem;
       font-weight: 600;
-      color: var(--text-primary);
-      margin-bottom: 0.25rem;
+      margin-bottom: .25rem
     }
 
     .result-meta {
-      font-size: 0.875rem;
-      color: var(--text-secondary);
+      font-size: .875rem;
+      color: var(--text-muted);
+      margin-bottom: .5rem
     }
 
     .result-link {
-      color: var(--color-accent);
+      color: var(--accent);
       text-decoration: none;
       font-weight: 500;
-      transition: var(--transition);
+      transition: color .3s
     }
 
     .result-link:hover {
-      color: #22d3ee;
-      text-decoration: underline;
+      color: #22d3ee
     }
 
     .result-actions {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-top: 1rem;
+      gap: .5rem;
+      margin-top: 1rem
     }
 
     .result-actions .btn {
-      padding: 0.5rem 1rem;
-      font-size: 0.875rem;
+      padding: .625rem 1rem;
+      font-size: .875rem
     }
 
     .codes-pre {
       margin-top: 1rem;
       padding: 1rem;
-      background: rgba(0, 0, 0, 0.4);
-      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 12px;
       font-family: 'Fira Code', monospace;
-      font-size: 0.875rem;
-      color: var(--color-accent);
-      max-height: 200px;
+      font-size: .85rem;
+      color: var(--accent);
+      max-height: 180px;
       overflow-y: auto;
     }
 
     .codes-pre.hidden {
-      display: none;
+      display: none
     }
 
-    /* TOAST */
+    /* Overlay & Modal */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(12px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .overlay.hidden {
+      display: none
+    }
+
+    .modal {
+      width: 90%;
+      max-width: 420px;
+      padding: 2.5rem;
+      border-radius: 28px;
+      animation: modalIn .5s var(--ease-bounce);
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: scale(.9) translateY(20px)
+      }
+
+      to {
+        opacity: 1;
+        transform: none
+      }
+    }
+
+    .modal h2 {
+      font-family: var(--font-display);
+      font-size: 1.5rem;
+      margin-bottom: .5rem;
+      background: linear-gradient(90deg, #fff, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent
+    }
+
+    .modal p {
+      color: var(--text-muted);
+      margin-bottom: 1.5rem
+    }
+
+    /* Toast */
     #toast-container {
       position: fixed;
       top: 1.5rem;
@@ -509,75 +547,79 @@
       transform: translateX(-50%);
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
-      z-index: 10000;
+      gap: .75rem;
+      z-index: 10000
     }
 
     .toast {
-      background: var(--gradient-1);
-      color: white;
+      background: linear-gradient(135deg, var(--primary), #a855f7);
+      color: #fff;
       padding: 1rem 1.5rem;
-      border-radius: 12px;
+      border-radius: 16px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
       display: flex;
       align-items: center;
       gap: 1rem;
-      animation: toastIn 0.4s ease;
+      animation: toastIn .4s var(--ease-bounce);
     }
 
     @keyframes toastIn {
       from {
         transform: translateY(-20px);
-        opacity: 0;
+        opacity: 0
       }
 
       to {
-        transform: translateY(0);
-        opacity: 1;
+        transform: none;
+        opacity: 1
       }
     }
 
     .toast button {
       background: rgba(255, 255, 255, 0.2);
       border: none;
-      color: white;
-      width: 24px;
-      height: 24px;
+      color: #fff;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       cursor: pointer;
-      font-size: 1rem;
+      font-size: 1.1rem
     }
 
-    /* ALERT */
+    /* Alerts */
     .alert {
       padding: 1rem;
       border-radius: 12px;
-      margin-bottom: 1rem;
+      margin-bottom: 1rem
     }
 
     .alert--warning {
-      background: rgba(245, 158, 11, 0.15);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      color: #fcd34d;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: #fcd34d
     }
 
     .alert--error {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #fca5a5;
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #fca5a5
     }
 
     .alert--success {
-      background: rgba(16, 185, 129, 0.15);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: #6ee7b7;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      color: #6ee7b7
     }
 
-    /* MODE BUTTONS */
+    .alert.hidden {
+      display: none
+    }
+
+    /* Mode Selector */
     .mode-selector {
       display: flex;
       gap: 1rem;
-      margin-bottom: 1.5rem;
+      margin-bottom: 1.5rem
     }
 
     .mode-btn {
@@ -585,123 +627,41 @@
       padding: 1.25rem;
       background: rgba(0, 0, 0, 0.3);
       border: 2px solid var(--glass-border);
-      border-radius: 16px;
-      color: var(--text-secondary);
+      border-radius: 20px;
+      color: var(--text-muted);
       font-weight: 600;
       cursor: pointer;
-      transition: var(--transition);
+      transition: all .3s var(--ease-smooth);
       text-align: center;
     }
 
     .mode-btn:hover {
-      border-color: rgba(99, 102, 241, 0.5);
+      border-color: rgba(139, 92, 246, 0.4)
     }
 
     .mode-btn.active {
-      background: rgba(99, 102, 241, 0.2);
-      border-color: var(--color-primary);
-      color: var(--text-primary);
+      background: rgba(139, 92, 246, 0.15);
+      border-color: var(--primary);
+      color: var(--text)
     }
 
-    /* FOOTER */
-    .app-footer {
+    /* Footer */
+    .footer {
       text-align: center;
-      padding: 2rem;
-      color: var(--text-secondary);
-      font-size: 0.875rem;
-      margin-top: auto;
+      padding: 2.5rem 1rem;
+      color: var(--text-muted);
+      font-size: .9rem;
+      margin-top: auto
     }
 
-    .app-footer strong {
-      background: var(--gradient-3);
+    .footer strong {
+      background: linear-gradient(90deg, var(--primary), var(--accent));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      background-clip: text;
-      font-weight: 700;
+      font-weight: 700
     }
 
-    /* SCROLLBAR */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.2);
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--color-primary);
-      border-radius: 4px;
-    }
-
-    /* RESPONSIVE */
-    @media (max-width: 768px) {
-      .app-container {
-        padding: 1rem;
-      }
-
-      .content {
-        padding: 1.5rem;
-      }
-
-      .nav-tabs {
-        flex-wrap: nowrap;
-      }
-
-      .tab {
-        padding: 1rem 0.75rem;
-        font-size: 0.875rem;
-      }
-
-      .mode-selector {
-        flex-direction: column;
-      }
-
-      .result-actions {
-        flex-direction: column;
-      }
-
-      .result-actions .btn {
-        width: 100%;
-      }
-    }
-
-    /* PARTICLES */
-    .particle {
-      position: fixed;
-      width: 4px;
-      height: 4px;
-      background: var(--color-accent);
-      border-radius: 50%;
-      opacity: 0.3;
-      pointer-events: none;
-      animation: float 15s infinite;
-    }
-
-    @keyframes float {
-
-      0%,
-      100% {
-        transform: translateY(100vh) rotate(0deg);
-        opacity: 0;
-      }
-
-      10% {
-        opacity: 0.3;
-      }
-
-      90% {
-        opacity: 0.3;
-      }
-
-      100% {
-        transform: translateY(-100vh) rotate(720deg);
-        opacity: 0;
-      }
-    }
-
-    /* SUGGESTIONS DROPDOWN */
+    /* Suggestions */
     #suggestions {
       position: absolute;
       top: 100%;
@@ -709,119 +669,166 @@
       right: 0;
       background: rgba(15, 23, 42, 0.98);
       border: 1px solid var(--glass-border);
-      border-radius: 0 0 12px 12px;
+      border-radius: 0 0 16px 16px;
       max-height: 200px;
       overflow-y: auto;
-      z-index: 20;
+      z-index: 20
     }
 
     #suggestions.hidden {
-      display: none;
+      display: none
     }
 
     #suggestions div {
-      padding: 0.75rem 1rem;
+      padding: .875rem 1rem;
       cursor: pointer;
-      transition: var(--transition);
+      transition: background .2s
     }
 
     #suggestions div:hover {
-      background: rgba(99, 102, 241, 0.2);
+      background: rgba(139, 92, 246, 0.2)
     }
 
-    /* SETTINGS MODAL */
-    .settings-modal .modal {
-      max-width: 450px;
-    }
-
+    /* Settings */
     .settings-group {
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.25rem
     }
 
     .checkbox-label {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: .75rem;
       cursor: pointer;
-      padding: 0.5rem 0;
+      padding: .5rem 0
     }
 
     .checkbox-label input[type="checkbox"] {
       width: 20px;
       height: 20px;
-      accent-color: var(--color-accent);
+      accent-color: var(--accent)
     }
 
-    select {
-      background: rgba(0, 0, 0, 0.4);
-    }
-
-    /* LOADING SPINNER */
+    /* Spinner */
     .spinner {
       width: 20px;
       height: 20px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-top-color: var(--color-accent);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: var(--accent);
       border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin .7s linear infinite
     }
 
     @keyframes spin {
       to {
-        transform: rotate(360deg);
+        transform: rotate(360deg)
       }
     }
 
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2)
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 4px
+    }
+
+    /* Utilities */
     .flex {
-      display: flex;
+      display: flex
     }
 
     .gap-2 {
-      gap: 0.5rem;
+      gap: .5rem
     }
 
     .gap-4 {
-      gap: 1rem;
+      gap: 1rem
     }
 
     .mb-4 {
-      margin-bottom: 1rem;
+      margin-bottom: 1rem
     }
 
     .mt-4 {
-      margin-top: 1rem;
+      margin-top: 1rem
     }
 
     .text-center {
-      text-align: center;
+      text-align: center
     }
 
     .space-y-4>*+* {
-      margin-top: 1rem;
+      margin-top: 1rem
+    }
+
+    /* Responsive */
+    @media(max-width:768px) {
+      .app {
+        padding: 1rem
+      }
+
+      .content {
+        padding: 1.5rem
+      }
+
+      .tabs {
+        overflow-x: auto
+      }
+
+      .tab {
+        padding: 1rem .75rem;
+        font-size: .875rem;
+        white-space: nowrap
+      }
+
+      .mode-selector {
+        flex-direction: column
+      }
+
+      .result-actions {
+        flex-direction: column
+      }
+
+      .result-actions .btn {
+        width: 100%
+      }
+
+      .bento {
+        grid-template-columns: 1fr
+      }
     }
   </style>
 </head>
 
 <body>
-  <!-- PARTICLES BACKGROUND -->
-  <div id="particles"></div>
+  <div class="ambient"></div>
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
 
-  <div class="app-container">
-    <!-- LOGIN OVERLAY -->
+  <div class="app">
+    <!-- Login Overlay -->
     <div id="loginOverlay" class="overlay">
-      <div class="modal">
+      <div class="modal liquid-glass">
         <h2>🔐 Acceso Restringido</h2>
         <p>Ingrese su número de acceso para continuar</p>
         <input id="accessInput" type="password" placeholder="Número de acceso" />
         <button id="submitAccess" class="btn btn--primary btn--full mt-4">Ingresar</button>
-        <p id="errorMsg" class="alert alert--error mt-4 hidden">Número incorrecto. Intente de nuevo.</p>
+        <p id="errorMsg" class="alert alert--error mt-4 hidden">Número incorrecto.</p>
       </div>
     </div>
 
-    <!-- CONFIRM DIALOG -->
+    <!-- Confirm Dialog -->
     <div id="confirmOverlay" class="overlay hidden">
-      <div class="modal text-center">
-        <p id="confirmMsg" style="font-size: 1.1rem; margin-bottom: 1.5rem;">¿Confirmar acción?</p>
+      <div class="modal liquid-glass text-center">
+        <p id="confirmMsg" style="font-size:1.1rem;margin-bottom:1.5rem">¿Confirmar acción?</p>
         <div class="flex gap-4">
           <button id="confirmCancel" class="btn btn--secondary btn--flex1">Cancelar</button>
           <button id="confirmOk" class="btn btn--primary btn--flex1">Aceptar</button>
@@ -829,54 +836,44 @@
       </div>
     </div>
 
-    <!-- DELETE KEY DIALOG -->
+    <!-- Delete Key Dialog -->
     <div id="deleteOverlay" class="overlay hidden">
-      <div class="modal">
+      <div class="modal liquid-glass">
         <h2>🔑 Clave de Eliminación</h2>
         <p>Ingrese la clave para eliminar este documento</p>
         <input id="deleteKeyInput" type="password" placeholder="Clave de borrado" />
         <p id="deleteKeyError" class="alert alert--error mt-4 hidden">Clave incorrecta.</p>
-        <button id="deleteKeyOk" class="btn btn--danger btn--full mt-4">Confirmar Eliminación</button>
+        <button id="deleteKeyOk" class="btn btn--danger btn--full mt-4">Eliminar</button>
         <button id="deleteKeyCancel" class="btn btn--secondary btn--full mt-4">Cancelar</button>
       </div>
     </div>
 
-    <!-- EXTRACTION SETTINGS MODAL -->
-    <div id="extractionSettingsModal" class="overlay hidden settings-modal">
-      <div class="modal">
+    <!-- Extraction Settings Modal -->
+    <div id="extractionSettingsModal" class="overlay hidden">
+      <div class="modal liquid-glass">
         <h2>⚙️ Configurar Escaneo</h2>
-        <p>Define cómo leeremos este documento o imagen</p>
-
+        <p>Define cómo leeremos este documento</p>
         <div class="settings-group">
-          <label>Buscar códigos que empiecen por:</label>
-          <input id="setting-prefixes" type="text" value="Ref:, Factura:, Inv:, REF, Ref, Codigo:"
-            placeholder="Ej: Ref:, Inv:, Cod:">
+          <label>Prefijos de código:</label>
+          <input id="setting-prefixes" type="text" value="Ref:, Factura:, Inv:, REF, Ref, Codigo:">
         </div>
-
         <div class="settings-group">
-          <label>El código termina cuando encuentra:</label>
+          <label>Terminador:</label>
           <select id="setting-terminator">
-            <option value="space">Espacio o Salto de Línea (Estándar)</option>
-            <option value="/">Barra inclinada (/)</option>
+            <option value="space">Espacio/Salto de Línea</option>
+            <option value="/">Barra (/)</option>
             <option value="-">Guión (-)</option>
             <option value=".">Punto (.)</option>
-            <option value="custom">Otro carácter...</option>
+            <option value="custom">Otro...</option>
           </select>
-          <input id="setting-terminator-custom" type="text" class="hidden mt-4" placeholder="Escribe el carácter"
-            maxlength="1">
+          <input id="setting-terminator-custom" type="text" class="hidden mt-4" placeholder="Carácter" maxlength="1">
         </div>
-
         <div class="settings-group">
-          <label class="checkbox-label">
-            <input id="setting-join-hyphens" type="checkbox" checked>
-            <span>Unir códigos cortados por línea</span>
-          </label>
-          <label class="checkbox-label">
-            <input id="setting-ocr" type="checkbox" checked disabled>
-            <span style="color: var(--color-accent);">Modo Inteligente (PDF + OCR)</span>
-          </label>
+          <label class="checkbox-label"><input id="setting-join-hyphens" type="checkbox" checked><span>Unir códigos
+              cortados</span></label>
+          <label class="checkbox-label"><input id="setting-ocr" type="checkbox" checked disabled><span
+              style="color:var(--accent)">Modo Inteligente (OCR)</span></label>
         </div>
-
         <div class="flex gap-4 mt-4">
           <button onclick="cancelExtraction()" class="btn btn--secondary btn--flex1">Cancelar</button>
           <button onclick="confirmExtraction()" class="btn btn--primary btn--flex1">🚀 Escanear</button>
@@ -884,562 +881,184 @@
       </div>
     </div>
 
-    <!-- TOAST CONTAINER -->
     <div id="toast-container"></div>
 
-    <!-- MAIN CONTENT -->
-    <div id="mainContent" class="main-card hidden">
-      <div class="app-header">
+    <!-- Main Content -->
+    <div id="mainContent" class="main-card liquid-glass hidden">
+      <div class="header">
         <h1>KINO COMPANY SAS V1</h1>
       </div>
-
-      <nav class="nav-tabs">
+      <nav class="tabs">
         <div class="tab active" data-tab="tab-search">🔍 Buscar</div>
         <div class="tab" data-tab="tab-upload">📤 Subir</div>
         <div class="tab" data-tab="tab-list">📋 Consultar</div>
         <div class="tab" data-tab="tab-code">🏷️ Por Código</div>
       </nav>
-
       <div class="content">
         <!-- TAB: SEARCH -->
         <div id="tab-search" class="tab-content">
           <h2 class="section-title">Búsqueda Inteligente</h2>
-          <div class="form-group">
-            <textarea id="searchInput" rows="6" placeholder="Pega aquí tus códigos o bloque de texto…"></textarea>
+          <div class="form-group"><textarea id="searchInput" rows="6" placeholder="Pega aquí tus códigos..."></textarea>
           </div>
           <div class="flex gap-4 mb-4">
             <button onclick="doSearch()" class="btn btn--primary btn--flex1">🔍 Buscar</button>
             <button onclick="clearSearch()" class="btn btn--secondary btn--flex1">🗑️ Limpiar</button>
           </div>
           <div id="search-alert" class="alert alert--error hidden"></div>
-          <div id="results-search" class="space-y-4"></div>
+          <div id="results-search" class="bento"></div>
         </div>
 
         <!-- TAB: UPLOAD -->
         <div id="tab-upload" class="tab-content hidden">
           <h2 class="section-title">Subir / Editar Documento</h2>
-
           <div class="mode-selector">
-            <button type="button" onclick="setUploadMode('manual')" id="btn-mode-manual" class="mode-btn active">
-              ✋ Subida Manual
-            </button>
-            <button type="button" onclick="setUploadMode('auto')" id="btn-mode-auto" class="mode-btn">
-              🤖 Subida Automática
-            </button>
+            <button type="button" onclick="setUploadMode('manual')" id="btn-mode-manual" class="mode-btn active">✋
+              Manual</button>
+            <button type="button" onclick="setUploadMode('auto')" id="btn-mode-auto" class="mode-btn">🤖
+              Automática</button>
           </div>
-
           <div id="upload-help-text" class="alert alert--warning hidden"></div>
-
           <form id="form-upload" enctype="multipart/form-data">
             <input id="docId" type="hidden" name="id" />
-
-            <div class="form-group">
-              <label>Nombre del documento</label>
-              <input id="name" name="name" type="text" required placeholder="Nombre descriptivo">
-            </div>
-
-            <div class="form-group">
-              <label>Fecha</label>
-              <input id="date" name="date" type="date" required>
-            </div>
-
+            <div class="form-group"><label>Nombre</label><input id="name" name="name" type="text" required
+                placeholder="Nombre del documento"></div>
+            <div class="form-group"><label>Fecha</label><input id="date" name="date" type="date" required></div>
             <div class="form-group">
               <label>PDF o Imagen</label>
               <input id="file" name="file" type="file" accept="application/pdf,image/*"
-                onchange="handleFileSelect(this)" style="padding: 0.75rem;">
-              <p id="uploadWarning" class="alert alert--error mt-4 hidden">
-                El archivo excede los 10 MB. Por favor, sube uno menor.
-              </p>
+                onchange="handleFileSelect(this)" style="padding:.75rem">
+              <p id="uploadWarning" class="alert alert--error mt-4 hidden">Archivo excede 10 MB.</p>
               <div id="auto-extract-status" class="hidden alert alert--warning mt-4"></div>
             </div>
-
             <div class="form-group">
-              <label>Códigos (Uno por línea)</label>
-              <textarea id="codes" name="codes" rows="6" style="font-family: monospace;"
-                placeholder="Los códigos aparecerán aquí..."></textarea>
-              <p id="code-count"
-                style="text-align: right; color: var(--text-secondary); font-size: 0.875rem; margin-top: 0.5rem;">0
+              <label>Códigos (uno por línea)</label>
+              <textarea id="codes" name="codes" rows="6" style="font-family:monospace"
+                placeholder="Códigos aquí..."></textarea>
+              <p id="code-count" style="text-align:right;color:var(--text-muted);font-size:.85rem;margin-top:.5rem">0
                 códigos</p>
             </div>
-
-            <div id="verify-warning" class="alert alert--warning hidden">
-              <strong>⚠️ VERIFICA LOS CÓDIGOS</strong>
-              <p style="margin-top: 0.5rem;">Revisa la lista y edítala si es necesario antes de subir.</p>
+            <div id="verify-warning" class="alert alert--warning hidden"><strong>⚠️ VERIFICA LOS CÓDIGOS</strong>
+              <p style="margin-top:.5rem">Revisa y edita si es necesario.</p>
             </div>
-
-            <button type="submit" class="btn btn--primary btn--full mt-4">💾 Guardar Documento</button>
+            <button type="submit" class="btn btn--primary btn--full mt-4">💾 Guardar</button>
           </form>
         </div>
 
         <!-- TAB: LIST -->
         <div id="tab-list" class="tab-content hidden">
           <h2 class="section-title">Consultar Documentos</h2>
-          <div class="flex gap-4 mb-4" style="flex-wrap: wrap;">
-            <input id="consultFilterInput" type="text" style="flex: 1; min-width: 200px;"
-              placeholder="Filtrar por nombre o PDF" oninput="doConsultFilter()">
+          <div class="flex gap-4 mb-4" style="flex-wrap:wrap">
+            <input id="consultFilterInput" type="text" style="flex:1;min-width:200px" placeholder="Filtrar..."
+              oninput="doConsultFilter()">
             <button onclick="clearConsultFilter()" class="btn btn--secondary">Limpiar</button>
             <button onclick="downloadCsv()" class="btn btn--accent">📊 CSV</button>
             <button onclick="downloadPdfs()" class="btn btn--primary">📁 PDFs</button>
           </div>
-          <div id="results-list" class="space-y-4"></div>
+          <div id="results-list" class="bento"></div>
         </div>
 
-        <!-- TAB: CODE SEARCH -->
+        <!-- TAB: CODE -->
         <div id="tab-code" class="tab-content hidden">
           <h2 class="section-title">Búsqueda por Código</h2>
-          <div class="form-group" style="position: relative;">
+          <div class="form-group" style="position:relative">
             <input id="codeInput" type="text" placeholder="Código (ej: ABC123)" autocomplete="off">
             <div id="suggestions" class="hidden"></div>
           </div>
-          <button onclick="doCodeSearch()" class="btn btn--primary btn--full mb-4">🔍 Buscar por Código</button>
-          <div id="results-code" class="space-y-4"></div>
+          <button onclick="doCodeSearch()" class="btn btn--primary btn--full mb-4">🔍 Buscar</button>
+          <div id="results-code" class="bento"></div>
         </div>
       </div>
     </div>
 
-    <!-- FOOTER -->
-    <footer class="app-footer">
+    <footer class="footer">
       <p>Elaborado por <strong>KINO GENIUS</strong></p>
     </footer>
   </div>
 
   <script>
-    // === CODE PROTECTION ===
+    // Protection
     document.addEventListener('contextmenu', e => e.preventDefault());
-    document.addEventListener('keydown', e => {
-      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) || (e.ctrlKey && e.key === 'u')) {
-        e.preventDefault();
-      }
+    document.addEventListener('keydown', e => { if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) || (e.ctrlKey && e.key === 'u')) e.preventDefault(); });
+
+    // Mouse light effect
+    document.querySelectorAll('.liquid-glass').forEach(el => {
+      el.addEventListener('mousemove', e => { const r = el.getBoundingClientRect(); el.style.setProperty('--mouse-x', ((e.clientX - r.left) / r.width * 100) + '%'); el.style.setProperty('--mouse-y', ((e.clientY - r.top) / r.height * 100) + '%'); });
     });
 
-    // === PARTICLES ===
-    (function createParticles() {
-      const container = document.getElementById('particles');
-      for (let i = 0; i < 15; i++) {
-        const p = document.createElement('div');
-        p.className = 'particle';
-        p.style.left = Math.random() * 100 + '%';
-        p.style.animationDelay = Math.random() * 15 + 's';
-        p.style.animationDuration = (15 + Math.random() * 10) + 's';
-        container.appendChild(p);
-      }
-    })();
-
-    // === CORE VARIABLES ===
-    const apiBase = './api.php';
-    const params = new URLSearchParams(window.location.search);
-    const clientCode = params.get('c');
+    // Core
+    const apiBase = './api.php', params = new URLSearchParams(window.location.search), clientCode = params.get('c');
     if (!clientCode) window.location.href = 'login.php';
     const apiUrl = `${apiBase}?c=${encodeURIComponent(clientCode)}`;
-    let fullList = [];
-    let pendingDeleteId = null;
-    let pendingFile = null;
-    let intervalId = null;
-    let currentUploadMode = 'manual';
+    let fullList = [], pendingDeleteId = null, pendingFile = null, intervalId = null, currentUploadMode = 'manual';
 
-    // === CLIENT CONFIG ===
-    (async function loadClientConfig() {
-      try {
-        const res = await fetch(`${apiUrl}&action=get_client_config`);
-        const config = await res.json();
-        if (config.color_primario) document.documentElement.style.setProperty('--color-primary', config.color_primario);
-        if (config.color_secundario) document.documentElement.style.setProperty('--color-accent', config.color_secundario);
-        if (config.titulo_app) {
-          document.querySelector('.app-header h1').innerText = config.titulo_app;
-          document.title = config.titulo_app;
-        }
-      } catch (e) { console.log('Using default config'); }
-    })();
+    // Client Config
+    (async function () { try { const r = await fetch(`${apiUrl}&action=get_client_config`); const c = await r.json(); if (c.color_primario) document.documentElement.style.setProperty('--primary', c.color_primario); if (c.color_secundario) document.documentElement.style.setProperty('--accent', c.color_secundario); if (c.titulo_app) { document.querySelector('.header h1').innerText = c.titulo_app; document.title = c.titulo_app; } } catch (e) { } })();
 
-    // === POLLING ===
     function startPolling(fn) { stopPolling(); intervalId = setInterval(fn, 60000); }
     function stopPolling() { if (intervalId) clearInterval(intervalId); intervalId = null; }
+    function toast(msg, d = 3000) { const c = document.getElementById('toast-container'), e = document.createElement('div'); e.className = 'toast'; e.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()">×</button>`; c.appendChild(e); setTimeout(() => e.remove(), d); }
+    function confirmDialog(msg) { return new Promise(r => { const o = document.getElementById('confirmOverlay'); document.getElementById('confirmMsg').textContent = msg; o.classList.remove('hidden'); document.getElementById('confirmOk').onclick = () => { o.classList.add('hidden'); r(true); }; document.getElementById('confirmCancel').onclick = () => { o.classList.add('hidden'); r(false); }; }); }
 
-    // === TOAST ===
-    function toast(msg, d = 3000) {
-      const c = document.getElementById('toast-container');
-      const e = document.createElement('div');
-      e.className = 'toast';
-      e.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()">×</button>`;
-      c.appendChild(e);
-      setTimeout(() => e.remove(), d);
-    }
-
-    // === CONFIRM DIALOG ===
-    function confirmDialog(msg) {
-      return new Promise(resolve => {
-        const ov = document.getElementById('confirmOverlay');
-        document.getElementById('confirmMsg').textContent = msg;
-        ov.classList.remove('hidden');
-        document.getElementById('confirmOk').onclick = () => { ov.classList.add('hidden'); resolve(true); };
-        document.getElementById('confirmCancel').onclick = () => { ov.classList.add('hidden'); resolve(false); };
-      });
-    }
-
-    // === LOGIN ===
-    document.getElementById('submitAccess').onclick = async () => {
-      const pass = document.getElementById('accessInput').value;
-      const btn = document.getElementById('submitAccess');
-      const err = document.getElementById('errorMsg');
-      btn.disabled = true;
-      btn.innerHTML = '<div class="spinner"></div>';
-      err.classList.add('hidden');
-      try {
-        const fd = new FormData();
-        fd.append('action', 'login');
-        fd.append('password', pass);
-        const res = await fetch(apiUrl, { method: 'POST', body: fd });
-        const data = await res.json();
-        if (data.success) {
-          document.getElementById('loginOverlay').classList.add('hidden');
-          document.getElementById('mainContent').classList.remove('hidden');
-          initApp();
-        } else {
-          err.textContent = "Contraseña incorrecta.";
-          err.classList.remove('hidden');
-        }
-      } catch (e) {
-        err.textContent = "Error de conexión.";
-        err.classList.remove('hidden');
-      }
-      btn.disabled = false;
-      btn.textContent = "Ingresar";
-    };
+    // Login
+    document.getElementById('submitAccess').onclick = async () => { const p = document.getElementById('accessInput').value, b = document.getElementById('submitAccess'), e = document.getElementById('errorMsg'); b.disabled = true; b.innerHTML = '<div class="spinner"></div>'; e.classList.add('hidden'); try { const f = new FormData(); f.append('action', 'login'); f.append('password', p); const r = await fetch(apiUrl, { method: 'POST', body: f }); const d = await r.json(); if (d.success) { document.getElementById('loginOverlay').classList.add('hidden'); document.getElementById('mainContent').classList.remove('hidden'); initApp(); } else { e.textContent = "Contraseña incorrecta."; e.classList.remove('hidden'); } } catch (x) { e.textContent = "Error de conexión."; e.classList.remove('hidden'); } b.disabled = false; b.textContent = "Ingresar"; };
     document.getElementById('accessInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('submitAccess').click(); });
 
-    // === CLEAR FUNCTIONS ===
-    function clearSearch() {
-      document.getElementById('searchInput').value = '';
-      document.getElementById('results-search').innerHTML = '';
-      document.getElementById('search-alert').classList.add('hidden');
-    }
+    function clearSearch() { document.getElementById('searchInput').value = ''; document.getElementById('results-search').innerHTML = ''; document.getElementById('search-alert').classList.add('hidden'); }
 
-    // === INIT APP ===
     function initApp() {
-      const deleteOv = document.getElementById('deleteOverlay');
-      const dkInput = document.getElementById('deleteKeyInput');
-      const dkErr = document.getElementById('deleteKeyError');
-
-      document.getElementById('deleteKeyOk').onclick = async () => {
-        const keyVal = dkInput.value;
-        const dkBtn = document.getElementById('deleteKeyOk');
-        dkBtn.disabled = true;
-        dkBtn.innerHTML = '<div class="spinner"></div>';
-        try {
-          const fd = new FormData();
-          fd.append('action', 'verify_delete_key');
-          fd.append('key', keyVal);
-          const res = await fetch(apiUrl, { method: 'POST', body: fd });
-          const data = await res.json();
-          if (!data.success) {
-            dkErr.classList.remove('hidden');
-            dkBtn.disabled = false;
-            dkBtn.textContent = "Confirmar Eliminación";
-            return;
-          }
-          deleteOv.classList.add('hidden');
-          dkErr.classList.add('hidden');
-          dkInput.value = '';
-          const ok = await confirmDialog('¿Eliminar este documento permanentemente?');
-          if (ok) await deleteDoc(pendingDeleteId);
-        } catch (e) { alert("Error de red."); }
-        dkBtn.disabled = false;
-        dkBtn.textContent = "Confirmar Eliminación";
-      };
+      const deleteOv = document.getElementById('deleteOverlay'), dkInput = document.getElementById('deleteKeyInput'), dkErr = document.getElementById('deleteKeyError');
+      document.getElementById('deleteKeyOk').onclick = async () => { const k = dkInput.value, b = document.getElementById('deleteKeyOk'); b.disabled = true; b.innerHTML = '<div class="spinner"></div>'; try { const f = new FormData(); f.append('action', 'verify_delete_key'); f.append('key', k); const r = await fetch(apiUrl, { method: 'POST', body: f }); const d = await r.json(); if (!d.success) { dkErr.classList.remove('hidden'); b.disabled = false; b.textContent = "Eliminar"; return; } deleteOv.classList.add('hidden'); dkErr.classList.add('hidden'); dkInput.value = ''; const ok = await confirmDialog('¿Eliminar permanentemente?'); if (ok) await deleteDoc(pendingDeleteId); } catch (x) { alert("Error de red."); } b.disabled = false; b.textContent = "Eliminar"; };
       document.getElementById('deleteKeyCancel').onclick = () => { deleteOv.classList.add('hidden'); dkErr.classList.add('hidden'); dkInput.value = ''; };
 
-      async function refresh() {
-        const res = await fetch(`${apiUrl}&action=list&page=1&per_page=0`);
-        const js = await res.json();
-        fullList = js.data || [];
-        if (document.querySelector('.tab.active').dataset.tab === 'tab-list') {
-          const term = document.getElementById('consultFilterInput').value.trim().toLowerCase();
-          if (term) doConsultFilter();
-          else render(fullList, 'results-list', false);
-        }
-      }
-      refresh();
-      startPolling(refresh);
+      async function refresh() { const r = await fetch(`${apiUrl}&action=list&page=1&per_page=0`); const j = await r.json(); fullList = j.data || []; if (document.querySelector('.tab.active').dataset.tab === 'tab-list') { const t = document.getElementById('consultFilterInput').value.trim().toLowerCase(); if (t) doConsultFilter(); else render(fullList, 'results-list', false); } }
+      refresh(); startPolling(refresh);
 
-      document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-        tab.classList.add('active');
-        document.getElementById(tab.dataset.tab).classList.remove('hidden');
-        if (tab.dataset.tab === 'tab-list') { refresh(); startPolling(refresh); } else { stopPolling(); }
-        if (tab.dataset.tab === 'tab-search') clearSearch();
-        if (tab.dataset.tab === 'tab-code') clearCode();
-      });
-
+      document.querySelectorAll('.tab').forEach(tab => tab.onclick = () => { document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden')); tab.classList.add('active'); document.getElementById(tab.dataset.tab).classList.remove('hidden'); if (tab.dataset.tab === 'tab-list') { refresh(); startPolling(refresh); } else { stopPolling(); } if (tab.dataset.tab === 'tab-search') clearSearch(); if (tab.dataset.tab === 'tab-code') clearCode(); });
       document.querySelector('.tab.active').click();
 
-      function render(items, cid, hideActions) {
-        const ct = document.getElementById(cid);
-        if (!items || !items.length) {
-          ct.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No hay documentos.</p>';
-          return;
-        }
-        const activeTab = document.querySelector('.tab.active')?.dataset.tab;
-        let searchCode = '';
-        if (activeTab === 'tab-code') searchCode = document.getElementById('codeInput').value.trim();
-        else if (activeTab === 'tab-search') {
-          const raw = document.getElementById('searchInput').value.trim();
-          searchCode = raw.split(/\s+/)[0] || '';
-        }
-        ct.innerHTML = items.map(d => `
-          <div class="result-card">
-            <div class="result-title">${d.name}</div>
-            <div class="result-meta">${d.date} • ${d.path}</div>
-            <a href="uploads/${d.path}" target="_blank" class="result-link">📄 Ver PDF</a>
-            <div class="result-actions">
-              ${!hideActions ? `
-                <button onclick="editDoc(${d.id})" class="btn btn--warning">✏️ Editar</button>
-                <button onclick="pendingDeleteId=${d.id}; document.getElementById('deleteOverlay').classList.remove('hidden'); document.getElementById('deleteKeyInput').focus();" class="btn btn--danger">🗑️ Eliminar</button>
-              ` : ''}
-              <button data-id="${d.id}" onclick="toggleCodes(this)" class="btn btn--secondary">👁️ Ver Códigos</button>
-              ${searchCode ? `<a href="visor.html?file=uploads/${d.path}&code=${encodeURIComponent(searchCode)}" target="_blank" class="btn btn--highlight">🖍️ Resaltar</a>` : ''}
-            </div>
-            <pre id="codes${d.id}" class="codes-pre hidden">${(d.codes || []).join('\n')}</pre>
-          </div>
-        `).join('');
-      }
+      function render(items, cid, hideActions) { const ct = document.getElementById(cid); if (!items || !items.length) { ct.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:2rem">No hay documentos.</p>'; return; } const activeTab = document.querySelector('.tab.active')?.dataset.tab; let searchCode = ''; if (activeTab === 'tab-code') searchCode = document.getElementById('codeInput').value.trim(); else if (activeTab === 'tab-search') { const raw = document.getElementById('searchInput').value.trim(); searchCode = raw.split(/\s+/)[0] || ''; } ct.innerHTML = items.map(d => `<div class="result-card"><div class="result-title">${d.name}</div><div class="result-meta">${d.date} • ${d.path}</div><a href="uploads/${d.path}" target="_blank" class="result-link">📄 Ver PDF</a><div class="result-actions">${!hideActions ? `<button onclick="editDoc(${d.id})" class="btn btn--warning">✏️</button><button onclick="pendingDeleteId=${d.id};document.getElementById('deleteOverlay').classList.remove('hidden');document.getElementById('deleteKeyInput').focus();" class="btn btn--danger">🗑️</button>` : ''}<button data-id="${d.id}" onclick="toggleCodes(this)" class="btn btn--secondary">👁️</button>${searchCode ? `<a href="visor.html?file=uploads/${d.path}&code=${encodeURIComponent(searchCode)}" target="_blank" class="btn btn--highlight">🖍️</a>` : ''}</div><pre id="codes${d.id}" class="codes-pre hidden">${(d.codes || []).join('\n')}</pre></div>`).join(''); }
 
       window.clearSearch = clearSearch;
-      window.doSearch = async () => {
-        const raw = document.getElementById('searchInput').value.trim(); if (!raw) return;
-        const codes = [...new Set(raw.split(/\r?\n/).map(l => l.trim().split(/\s+/)[0]).filter(Boolean))];
-        const fd = new FormData(); fd.append('action', 'search'); fd.append('codes', codes.join('\n'));
-        const res = await fetch(apiUrl, { method: 'POST', body: fd }); const data = await res.json();
-        const found = new Set(data.flatMap(d => d.codes || []));
-        const missing = codes.filter(c => !found.has(c));
-        const alertEl = document.getElementById('search-alert');
-        if (missing.length) { alertEl.innerText = 'No encontrados: ' + missing.join(', '); alertEl.classList.remove('hidden'); }
-        else alertEl.classList.add('hidden');
-        document.getElementById('results-search').innerHTML = '';
-        render(data, 'results-search', true);
-      };
+      window.doSearch = async () => { const raw = document.getElementById('searchInput').value.trim(); if (!raw) return; const codes = [...new Set(raw.split(/\r?\n/).map(l => l.trim().split(/\s+/)[0]).filter(Boolean))]; const f = new FormData(); f.append('action', 'search'); f.append('codes', codes.join('\n')); const r = await fetch(apiUrl, { method: 'POST', body: f }); const data = await r.json(); const found = new Set(data.flatMap(d => d.codes || [])); const missing = codes.filter(c => !found.has(c)); const alertEl = document.getElementById('search-alert'); if (missing.length) { alertEl.innerText = 'No encontrados: ' + missing.join(', '); alertEl.classList.remove('hidden'); } else alertEl.classList.add('hidden'); document.getElementById('results-search').innerHTML = ''; render(data, 'results-search', true); };
 
-      document.getElementById('form-upload').onsubmit = async e => {
-        e.preventDefault();
-        const fileInput = document.getElementById('file');
-        const warning = document.getElementById('uploadWarning');
-        const f = e.target;
-        const file = fileInput.files[0];
-        if (file && file.size > 10 * 1024 * 1024) { warning.classList.remove('hidden'); return; }
-        warning.classList.add('hidden');
-        let codesArr = f.codes.value.split(/\r?\n/).map(s => s.trim()).filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
-        f.codes.value = codesArr.join('\n');
-        const act = f.id.value ? 'edit' : 'upload';
-        const fd = new FormData(f);
-        fd.append('action', act);
-        const res = await fetch(apiUrl, { method: 'POST', body: fd });
-        const js = await res.json();
-        toast(js.message || js.error);
-        f.reset();
-      };
+      document.getElementById('form-upload').onsubmit = async e => { e.preventDefault(); const fileInput = document.getElementById('file'), warning = document.getElementById('uploadWarning'), f = e.target, file = fileInput.files[0]; if (file && file.size > 10 * 1024 * 1024) { warning.classList.remove('hidden'); return; } warning.classList.add('hidden'); let codesArr = f.codes.value.split(/\r?\n/).map(s => s.trim()).filter(Boolean).sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })); f.codes.value = codesArr.join('\n'); const act = f.id.value ? 'edit' : 'upload'; const fd = new FormData(f); fd.append('action', act); const r = await fetch(apiUrl, { method: 'POST', body: fd }); const j = await r.json(); toast(j.message || j.error); f.reset(); };
 
       window.clearConsultFilter = () => { document.getElementById('consultFilterInput').value = ''; document.getElementById('results-list').innerHTML = ''; };
-      window.doConsultFilter = () => {
-        const term = document.getElementById('consultFilterInput').value.trim().toLowerCase();
-        render(fullList.filter(d => d.name.toLowerCase().includes(term) || d.path.toLowerCase().includes(term)), 'results-list', false);
-      };
+      window.doConsultFilter = () => { const t = document.getElementById('consultFilterInput').value.trim().toLowerCase(); render(fullList.filter(d => d.name.toLowerCase().includes(t) || d.path.toLowerCase().includes(t)), 'results-list', false); };
       window.downloadCsv = () => { let csv = 'Código,Documento\n'; fullList.forEach(d => d.codes.forEach(c => csv += `${c},${d.name}\n`)); const blob = new Blob([csv], { type: 'text/csv' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'documentos.csv'; a.click(); URL.revokeObjectURL(url); };
       window.downloadPdfs = () => { window.location = `${apiUrl}&action=download_pdfs`; };
 
       const codeInput = document.getElementById('codeInput'), suggest = document.getElementById('suggestions'); let timeoutId;
-      codeInput.addEventListener('input', () => {
-        clearTimeout(timeoutId);
-        const term = codeInput.value.trim();
-        if (!term) return suggest.classList.add('hidden');
-        timeoutId = setTimeout(async () => {
-          const r = await fetch(`${apiUrl}&action=suggest&term=${encodeURIComponent(term)}`);
-          const arr = await r.json();
-          if (!arr.length) return suggest.classList.add('hidden');
-          suggest.innerHTML = arr.map(c => `<div data-code="${c}">${c}</div>`).join('');
-          suggest.classList.remove('hidden');
-        }, 200);
-      });
+      codeInput.addEventListener('input', () => { clearTimeout(timeoutId); const t = codeInput.value.trim(); if (!t) return suggest.classList.add('hidden'); timeoutId = setTimeout(async () => { const r = await fetch(`${apiUrl}&action=suggest&term=${encodeURIComponent(t)}`); const arr = await r.json(); if (!arr.length) return suggest.classList.add('hidden'); suggest.innerHTML = arr.map(c => `<div data-code="${c}">${c}</div>`).join(''); suggest.classList.remove('hidden'); }, 200); });
       suggest.addEventListener('click', e => { const c = e.target.dataset.code; if (!c) return; codeInput.value = c; suggest.classList.add('hidden'); doCodeSearch(); });
       codeInput.addEventListener('blur', () => setTimeout(() => suggest.classList.add('hidden'), 100));
       window.clearCode = () => { document.getElementById('results-code').innerHTML = ''; };
-      window.doCodeSearch = async () => {
-        const code = codeInput.value.trim(); if (!code) return;
-        const fd = new FormData(); fd.append('action', 'search_by_code'); fd.append('code', code);
-        const res = await fetch(apiUrl, { method: 'POST', body: fd }); const data = await res.json();
-        document.getElementById('results-code').innerHTML = '';
-        if (!data.length) document.getElementById('results-code').innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No hay documentos.</p>';
-        else render(data, 'results-code', true);
-      };
+      window.doCodeSearch = async () => { const code = codeInput.value.trim(); if (!code) return; const f = new FormData(); f.append('action', 'search_by_code'); f.append('code', code); const r = await fetch(apiUrl, { method: 'POST', body: f }); const data = await r.json(); document.getElementById('results-code').innerHTML = ''; if (!data.length) document.getElementById('results-code').innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:2rem">No hay documentos.</p>'; else render(data, 'results-code', true); };
 
-      window.editDoc = id => {
-        const d = fullList.find(x => x.id === id); if (!d) return;
-        document.querySelector('[data-tab="tab-upload"]').click();
-        document.getElementById('docId').value = d.id;
-        document.getElementById('name').value = d.name;
-        document.getElementById('date').value = d.date;
-        document.getElementById('codes').value = d.codes.join('\n');
-      };
-      window.deleteDoc = async id => {
-        const res = await fetch(`${apiUrl}&action=delete&id=${id}`);
-        const js = await res.json();
-        toast(js.message || js.error);
-        document.querySelector('.tab.active').click();
-      };
-      window.toggleCodes = btn => {
-        const id = btn.dataset.id;
-        const pre = document.getElementById(`codes${id}`);
-        if (pre.classList.toggle('hidden')) { btn.textContent = '👁️ Ver Códigos'; startPolling(refresh); }
-        else { btn.textContent = '🙈 Ocultar'; stopPolling(); }
-      };
+      window.editDoc = id => { const d = fullList.find(x => x.id === id); if (!d) return; document.querySelector('[data-tab="tab-upload"]').click(); document.getElementById('docId').value = d.id; document.getElementById('name').value = d.name; document.getElementById('date').value = d.date; document.getElementById('codes').value = d.codes.join('\n'); };
+      window.deleteDoc = async id => { const r = await fetch(`${apiUrl}&action=delete&id=${id}`); const j = await r.json(); toast(j.message || j.error); document.querySelector('.tab.active').click(); };
+      window.toggleCodes = btn => { const id = btn.dataset.id, pre = document.getElementById(`codes${id}`); if (pre.classList.toggle('hidden')) { btn.textContent = '👁️'; startPolling(refresh); } else { btn.textContent = '🙈'; stopPolling(); } };
     }
 
-    // === UPLOAD MODE ===
-    function setUploadMode(mode) {
-      currentUploadMode = mode;
-      const btnManual = document.getElementById('btn-mode-manual');
-      const btnAuto = document.getElementById('btn-mode-auto');
-      const helpText = document.getElementById('upload-help-text');
-      btnManual.className = "mode-btn " + (mode === 'manual' ? "active" : "");
-      btnAuto.className = "mode-btn " + (mode === 'auto' ? "active" : "");
-      helpText.classList.remove('hidden');
-      if (mode === 'manual') helpText.innerHTML = '<strong>Modo Manual:</strong> Escribe o pega los códigos manualmente.';
-      else helpText.innerHTML = '<strong>Modo Automático:</strong> El sistema extraerá los códigos del documento.';
-    }
+    // Upload Mode
+    function setUploadMode(mode) { currentUploadMode = mode; const bm = document.getElementById('btn-mode-manual'), ba = document.getElementById('btn-mode-auto'), ht = document.getElementById('upload-help-text'); bm.className = "mode-btn " + (mode === 'manual' ? "active" : ""); ba.className = "mode-btn " + (mode === 'auto' ? "active" : ""); ht.classList.remove('hidden'); if (mode === 'manual') ht.innerHTML = '<strong>Manual:</strong> Escribe los códigos manualmente.'; else ht.innerHTML = '<strong>Automática:</strong> Códigos extraídos del documento.'; }
     setUploadMode('manual');
 
-    async function handleFileSelect(input) {
-      const file = input.files[0]; if (!file) return;
-      const warning = document.getElementById('uploadWarning');
-      if (file.size > 10 * 1024 * 1024) { warning.classList.remove('hidden'); return; }
-      warning.classList.add('hidden');
-      if (currentUploadMode === 'auto' && (file.type === 'application/pdf' || file.type.startsWith('image/'))) {
-        pendingFile = file;
-        document.getElementById('extractionSettingsModal').classList.remove('hidden');
-      }
-    }
+    async function handleFileSelect(input) { const file = input.files[0]; if (!file) return; const w = document.getElementById('uploadWarning'); if (file.size > 10 * 1024 * 1024) { w.classList.remove('hidden'); return; } w.classList.add('hidden'); if (currentUploadMode === 'auto' && (file.type === 'application/pdf' || file.type.startsWith('image/'))) { pendingFile = file; document.getElementById('extractionSettingsModal').classList.remove('hidden'); } }
 
-    function cancelExtraction() {
-      document.getElementById('extractionSettingsModal').classList.add('hidden');
-      document.getElementById('file').value = "";
-      pendingFile = null;
-    }
+    function cancelExtraction() { document.getElementById('extractionSettingsModal').classList.add('hidden'); document.getElementById('file').value = ""; pendingFile = null; }
 
-    document.getElementById('setting-terminator').addEventListener('change', function () {
-      const customInput = document.getElementById('setting-terminator-custom');
-      if (this.value === 'custom') { customInput.classList.remove('hidden'); customInput.focus(); }
-      else customInput.classList.add('hidden');
-    });
+    document.getElementById('setting-terminator').addEventListener('change', function () { const c = document.getElementById('setting-terminator-custom'); if (this.value === 'custom') { c.classList.remove('hidden'); c.focus(); } else c.classList.add('hidden'); });
 
-    async function confirmExtraction() {
-      if (!pendingFile) return;
-      const prefixesRaw = document.getElementById('setting-prefixes').value;
-      const prefixes = prefixesRaw.split(',').map(s => s.trim()).filter(Boolean);
-      let terminator = document.getElementById('setting-terminator').value;
-      if (terminator === 'space') terminator = null;
-      if (terminator === 'custom') terminator = document.getElementById('setting-terminator-custom').value;
-      const joinHyphens = document.getElementById('setting-join-hyphens').checked;
-      document.getElementById('extractionSettingsModal').classList.add('hidden');
-      const statusDiv = document.getElementById('auto-extract-status');
-      statusDiv.classList.remove('hidden');
-      statusDiv.innerHTML = '<div class="flex gap-2" style="align-items:center;"><div class="spinner"></div><strong>Escaneando documento...</strong></div>';
-      document.getElementById('codes').value = "Analizando...\nPor favor espera...";
-      try {
-        let fullText = "";
-        if (pendingFile.type.startsWith('image/')) fullText = await processImageWithOCR(pendingFile);
-        else if (pendingFile.type === 'application/pdf') fullText = await processPdfText(pendingFile);
-        const extractedCodes = runAdvancedExtraction(fullText, prefixes, terminator, joinHyphens);
-        displayResults(extractedCodes);
-      } catch (error) {
-        console.error(error);
-        statusDiv.innerHTML = `<span style="color: var(--color-danger);">❌ Error: ${error.message}</span>`;
-        document.getElementById('codes').value = "Error al leer el archivo.";
-      }
-      pendingFile = null;
-    }
+    async function confirmExtraction() { if (!pendingFile) return; const prefixesRaw = document.getElementById('setting-prefixes').value, prefixes = prefixesRaw.split(',').map(s => s.trim()).filter(Boolean); let terminator = document.getElementById('setting-terminator').value; if (terminator === 'space') terminator = null; if (terminator === 'custom') terminator = document.getElementById('setting-terminator-custom').value; const joinHyphens = document.getElementById('setting-join-hyphens').checked; document.getElementById('extractionSettingsModal').classList.add('hidden'); const st = document.getElementById('auto-extract-status'); st.classList.remove('hidden'); st.innerHTML = '<div class="flex gap-2" style="align-items:center"><div class="spinner"></div><strong>Escaneando...</strong></div>'; document.getElementById('codes').value = "Analizando..."; try { let fullText = ""; if (pendingFile.type.startsWith('image/')) fullText = await processImageWithOCR(pendingFile); else if (pendingFile.type === 'application/pdf') fullText = await processPdfText(pendingFile); const extractedCodes = runAdvancedExtraction(fullText, prefixes, terminator, joinHyphens); displayResults(extractedCodes); } catch (error) { console.error(error); st.innerHTML = `<span style="color:var(--danger)">❌ Error: ${error.message}</span>`; document.getElementById('codes').value = "Error al leer."; } pendingFile = null; }
 
-    async function processImageWithOCR(file) {
-      const worker = await Tesseract.createWorker('eng');
-      const ret = await worker.recognize(file);
-      await worker.terminate();
-      return ret.data.text;
-    }
+    async function processImageWithOCR(file) { const worker = await Tesseract.createWorker('eng'); const ret = await worker.recognize(file); await worker.terminate(); return ret.data.text; }
 
-    async function processPdfText(file) {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-      let fullText = "";
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        let pageText = "";
-        let lastY = -1;
-        for (const item of textContent.items) {
-          if (lastY !== -1 && Math.abs(item.transform[5] - lastY) > 10) pageText += "\n";
-          else if (pageText.length > 0 && !pageText.endsWith("\n") && !pageText.endsWith(" ") && item.str.trim().length > 0) {
-            if (!item.str.startsWith(" ")) pageText += " ";
-          }
-          pageText += item.str;
-          lastY = item.transform[5];
-        }
-        fullText += pageText + "\n";
-      }
-      return fullText;
-    }
+    async function processPdfText(file) { const ab = await file.arrayBuffer(); const pdf = await pdfjsLib.getDocument(ab).promise; let ft = ""; for (let i = 1; i <= pdf.numPages; i++) { const pg = await pdf.getPage(i); const tc = await pg.getTextContent(); let pt = "", ly = -1; for (const it of tc.items) { if (ly !== -1 && Math.abs(it.transform[5] - ly) > 10) pt += "\n"; else if (pt.length > 0 && !pt.endsWith("\n") && !pt.endsWith(" ") && it.str.trim().length > 0) { if (!it.str.startsWith(" ")) pt += " "; } pt += it.str; ly = it.transform[5]; } ft += pt + "\n"; } return ft; }
 
-    function runAdvancedExtraction(text, markers, stopChar, joinHyphens) {
-      let processedText = text;
-      if (joinHyphens) processedText = processedText.replace(/-\s*[\r\n]+\s*/g, "-");
-      if (!stopChar) processedText = processedText.replace(/[\r\n]+/g, " ");
-      const foundCodes = [];
-      const lowerText = processedText.toLowerCase();
-      const defaultStopChars = [" ", "\t", "\n", ",", ";"];
-      if (stopChar) { defaultStopChars.length = 0; defaultStopChars.push(stopChar, "\n"); }
-      let searchIndex = 0;
-      while (searchIndex < processedText.length) {
-        let bestStartIndex = -1;
-        let bestTokenLength = 0;
-        for (const token of markers) {
-          const idx = lowerText.indexOf(token.toLowerCase(), searchIndex);
-          if (idx !== -1 && (bestStartIndex === -1 || idx < bestStartIndex)) {
-            bestStartIndex = idx;
-            bestTokenLength = token.length;
-          }
-        }
-        if (bestStartIndex === -1) break;
-        let cursor = bestStartIndex + bestTokenLength;
-        while (cursor < processedText.length && /\s/.test(processedText[cursor])) cursor++;
-        const codeStart = cursor;
-        let codeEnd = -1;
-        for (let i = codeStart; i < processedText.length; i++) {
-          const char = processedText[i];
-          if (stopChar) { if (char === stopChar || char === '\n') { codeEnd = i; break; } }
-          else { if (defaultStopChars.includes(char)) { codeEnd = i; break; } }
-        }
-        if (codeEnd === -1) codeEnd = processedText.length;
-        if (codeEnd > codeStart) {
-          let rawCode = processedText.substring(codeStart, codeEnd).trim().replace(/[.,;]+$/, "");
-          if (rawCode.length > 1) foundCodes.push(rawCode);
-          searchIndex = codeEnd;
-        } else searchIndex = cursor + 1;
-      }
-      return [...new Set(foundCodes)];
-    }
+    function runAdvancedExtraction(text, markers, stopChar, joinHyphens) { let pt = text; if (joinHyphens) pt = pt.replace(/-\s*[\r\n]+\s*/g, "-"); if (!stopChar) pt = pt.replace(/[\r\n]+/g, " "); const fc = [], lt = pt.toLowerCase(), dsc = [" ", "\t", "\n", ",", ";"]; if (stopChar) { dsc.length = 0; dsc.push(stopChar, "\n"); } let si = 0; while (si < pt.length) { let bsi = -1, btl = 0; for (const tk of markers) { const idx = lt.indexOf(tk.toLowerCase(), si); if (idx !== -1 && (bsi === -1 || idx < bsi)) { bsi = idx; btl = tk.length; } } if (bsi === -1) break; let cur = bsi + btl; while (cur < pt.length && /\s/.test(pt[cur])) cur++; const cs = cur; let ce = -1; for (let i = cs; i < pt.length; i++) { const ch = pt[i]; if (stopChar) { if (ch === stopChar || ch === '\n') { ce = i; break; } } else { if (dsc.includes(ch)) { ce = i; break; } } } if (ce === -1) ce = pt.length; if (ce > cs) { let rc = pt.substring(cs, ce).trim().replace(/[.,;]+$/, ""); if (rc.length > 1) fc.push(rc); si = ce; } else si = cur + 1; } return [...new Set(fc)]; }
 
-    function displayResults(codes) {
-      const statusDiv = document.getElementById('auto-extract-status');
-      const codesArea = document.getElementById('codes');
-      const countLabel = document.getElementById('code-count');
-      if (codes.length > 0) {
-        codesArea.value = codes.join('\n');
-        statusDiv.innerHTML = `<span style="color: var(--color-success);">✅ ¡Éxito! ${codes.length} códigos encontrados.</span>`;
-        countLabel.innerText = `${codes.length} códigos`;
-        document.getElementById('verify-warning').classList.remove('hidden');
-        document.getElementById('verify-warning').scrollIntoView({ behavior: 'smooth' });
-      } else {
-        codesArea.value = "";
-        statusDiv.innerHTML = `<span style="color: var(--color-warning);">⚠️ No se encontraron códigos. Ajusta los prefijos.</span>`;
-      }
-    }
+    function displayResults(codes) { const st = document.getElementById('auto-extract-status'), ca = document.getElementById('codes'), cl = document.getElementById('code-count'); if (codes.length > 0) { ca.value = codes.join('\n'); st.innerHTML = `<span style="color:var(--success)">✅ ${codes.length} códigos encontrados.</span>`; cl.innerText = `${codes.length} códigos`; document.getElementById('verify-warning').classList.remove('hidden'); document.getElementById('verify-warning').scrollIntoView({ behavior: 'smooth' }); } else { ca.value = ""; st.innerHTML = `<span style="color:var(--warning)">⚠️ No se encontraron códigos.</span>`; } }
   </script>
 </body>
 
