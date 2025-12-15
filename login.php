@@ -86,7 +86,7 @@ error_log('✅ [INDEX] Renderizando vista');
         }
 
         :root {
-            /* Neobrutalismo: Alto contraste, colores vibrantes */
+            /* Neobrutalismo: Alto contraste, colores vibrantes (Modo Claro) */
             --primary: #facc15;
             --primary-glow: rgba(250, 204, 21, 0.4);
             --accent: #00f0ff;
@@ -94,20 +94,21 @@ error_log('✅ [INDEX] Renderizando vista');
             --success: #22c55e;
             --warning: #fb923c;
             --danger: #f43f5e;
-            --bg-card: #0a0a0a;
-            --border-hard: #333;
+            --bg-card: #ffffff;
+            --border-hard: #000000;
             --border-accent: var(--primary);
-            --text: #ffffff;
-            --text-muted: #a1a1aa;
-            --dark-1: #000000;
-            --dark-2: #0a0a0a;
-            --dark-3: #171717;
+            --text: #0f172a;
+            --text-muted: #475569;
+            --dark-1: #f8fafc;
+            --dark-2: #f1f5f9;
+            --dark-3: #ffffff;
             --font-display: 'Inter', -apple-system, sans-serif;
             --font-body: 'Inter', -apple-system, sans-serif;
             --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
             --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
             --shadow-brutal: 8px 8px 0 var(--primary);
             --shadow-brutal-sm: 4px 4px 0 var(--primary);
+            --glass-border: rgba(0, 0, 0, 0.1);
         }
 
         body {
