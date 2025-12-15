@@ -22,29 +22,38 @@
     }
 
     :root {
-      /* Neobrutalismo: Alto contraste, colores vibrantes (Modo Claro) */
+      /* Minimalismo Moderno: Elegante, Dinámico y Audaz */
       --primary: #facc15;
-      --primary-glow: rgba(250, 204, 21, 0.4);
-      --accent: #00f0ff;
-      --accent-glow: rgba(0, 240, 255, 0.3);
-      --success: #22c55e;
-      --warning: #fb923c;
-      --danger: #f43f5e;
+      /* Manteniendo identidad pero más limpio */
+      --primary-dim: #eab308;
+      --accent: #0ea5e9;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+
+      --bg-body: #f8fafc;
       --bg-card: #ffffff;
-      --border-hard: #000000;
-      --border-accent: var(--primary);
-      --text: #0f172a;
-      --text-muted: #475569;
-      --dark-1: #f8fafc;
-      --dark-2: #f1f5f9;
-      --dark-3: #ffffff;
+      --bg-input: #f1f5f9;
+
+      --border-light: rgba(0, 0, 0, 0.06);
+      --border-focus: var(--primary);
+
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+
       --font-display: 'Inter', -apple-system, sans-serif;
       --font-body: 'Inter', -apple-system, sans-serif;
-      --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-      --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-      --shadow-brutal: 4px 4px 0 var(--primary);
-      --shadow-brutal-sm: 2px 2px 0 var(--primary);
-      --glass-border: rgba(0, 0, 0, 0.1);
+
+      --ease-spring: cubic-bezier(0.4, 0, 0.2, 1);
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 24px;
     }
 
     html {
@@ -53,95 +62,39 @@
 
     body {
       font-family: var(--font-body);
-      background: var(--dark-1);
-      color: var(--text);
+      background: var(--bg-body);
+      color: var(--text-main);
       min-height: 100vh;
       overflow-x: hidden;
+      line-height: 1.5;
     }
 
-    /* Ambient Background */
+    /* Ambient Background - Subtle & Elegant */
     .ambient {
       position: fixed;
       inset: 0;
       pointer-events: none;
       z-index: 0;
       background:
-        radial-gradient(ellipse 80% 50% at 20% 40%, rgba(139, 92, 246, 0.15), transparent),
-        radial-gradient(ellipse 60% 40% at 80% 60%, rgba(6, 182, 212, 0.12), transparent),
-        radial-gradient(ellipse 50% 50% at 50% 100%, rgba(236, 72, 153, 0.08), transparent);
+        radial-gradient(circle at 15% 50%, rgba(250, 204, 21, 0.08), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.05), transparent 25%);
     }
 
-    .orb {
-      position: fixed;
-      border-radius: 50%;
-      filter: blur(80px);
-      pointer-events: none;
-      z-index: 0;
-      animation: float 20s ease-in-out infinite;
-    }
-
-    .orb-1 {
-      width: 400px;
-      height: 400px;
-      background: rgba(139, 92, 246, 0.2);
-      top: -100px;
-      left: -100px
-    }
-
-    .orb-2 {
-      width: 300px;
-      height: 300px;
-      background: rgba(6, 182, 212, 0.15);
-      bottom: 10%;
-      right: -50px;
-      animation-delay: -7s
-    }
-
-    .orb-3 {
-      width: 200px;
-      height: 200px;
-      background: rgba(236, 72, 153, 0.12);
-      top: 50%;
-      left: 30%;
-      animation-delay: -14s
-    }
-
-    @keyframes float {
-
-      0%,
-      100% {
-        transform: translate(0, 0) scale(1)
-      }
-
-      50% {
-        transform: translate(30px, -30px) scale(1.1)
-      }
-    }
-
-    .app {
-      position: relative;
-      z-index: 1;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 1.5rem
-    }
-
-    /* Neobrutalista Card */
+    /* Modern Minimalist Card */
     .liquid-glass {
       background: var(--bg-card);
-      border: 3px solid var(--border-hard);
-      box-shadow: var(--shadow-brutal);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-lg);
       position: relative;
       overflow: hidden;
-      transition: all 0.2s var(--ease-smooth);
+      transition: all 0.3s var(--ease-spring);
     }
 
     .liquid-glass:hover {
-      border-color: var(--primary);
-      box-shadow: 6px 6px 0 var(--primary);
-      transform: translate(-2px, -2px);
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-4px);
+      border-color: rgba(0, 0, 0, 0.08);
     }
 
     .liquid-glass::before {

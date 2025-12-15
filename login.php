@@ -86,40 +86,31 @@ error_log('✅ [INDEX] Renderizando vista');
         }
 
         :root {
-            /* Neobrutalismo: Alto contraste, colores vibrantes (Modo Claro) */
+            /* Minimalismo Moderno */
             --primary: #facc15;
-            --primary-glow: rgba(250, 204, 21, 0.4);
-            --accent: #00f0ff;
-            --accent-glow: rgba(0, 240, 255, 0.3);
-            --success: #22c55e;
-            --warning: #fb923c;
-            --danger: #f43f5e;
+            --primary-dim: #eab308;
+            --accent: #0ea5e9;
+            --bg-body: #f8fafc;
             --bg-card: #ffffff;
-            --border-hard: #000000;
-            --border-accent: var(--primary);
-            --text: #0f172a;
-            --text-muted: #475569;
-            --dark-1: #f8fafc;
-            --dark-2: #f1f5f9;
-            --dark-3: #ffffff;
+            --bg-input: #f1f5f9;
+            --border-light: rgba(0, 0, 0, 0.06);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
             --font-display: 'Inter', -apple-system, sans-serif;
             --font-body: 'Inter', -apple-system, sans-serif;
-            --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-            --shadow-brutal: 8px 8px 0 var(--primary);
-            --shadow-brutal-sm: 4px 4px 0 var(--primary);
-            --glass-border: rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --radius-lg: 24px;
         }
 
         body {
             font-family: var(--font-body);
-            background: var(--dark-1);
+            background: var(--bg-body);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            color: var(--text);
+            color: var(--text-main);
             overflow-x: hidden;
             position: relative;
         }
@@ -131,74 +122,34 @@ error_log('✅ [INDEX] Renderizando vista');
             pointer-events: none;
             z-index: 0;
             background:
-                radial-gradient(ellipse 80% 50% at 20% 40%, rgba(250, 204, 21, 0.1), transparent),
-                radial-gradient(ellipse 60% 40% at 80% 60%, rgba(0, 240, 255, 0.1), transparent);
+                radial-gradient(circle at 50% 100%, rgba(250, 204, 21, 0.1), transparent 40%),
+                radial-gradient(circle at 50% 0%, rgba(14, 165, 233, 0.05), transparent 40%);
         }
 
-        .orb {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(100px);
-            pointer-events: none;
-            z-index: 0;
-            animation: float 20s ease-in-out infinite;
-            opacity: 0.5;
-        }
-
-        .orb-1 {
-            width: 500px;
-            height: 500px;
-            background: var(--primary);
-            top: -200px;
-            left: -200px;
-        }
-
-        .orb-2 {
-            width: 400px;
-            height: 400px;
-            background: var(--accent);
-            bottom: -100px;
-            right: -100px;
-            animation-delay: -5s;
-        }
-
-        @keyframes float {
-
-            0%,
-            100% {
-                transform: translate(0, 0) scale(1);
-            }
-
-            50% {
-                transform: translate(30px, -30px) scale(1.1);
-            }
-        }
-
-        /* Neobrutalist Card */
+        /* Minimalist Card */
         .card {
             position: relative;
             z-index: 1;
             background: var(--bg-card);
-            border: 4px solid var(--border-hard);
-            box-shadow: var(--shadow-brutal);
-            padding: 3rem;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-lg);
+            border-radius: var(--radius-lg);
+            padding: 3.5rem;
             width: 100%;
-            max-width: 480px;
+            max-width: 440px;
             margin: 1rem;
-            animation: cardIn 0.6s var(--ease-bounce);
-            transition: all 0.2s ease;
+            animation: cardIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
 
         .card:hover {
-            border-color: var(--primary);
-            transform: translate(-4px, -4px);
-            box-shadow: 12px 12px 0 var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
         @keyframes cardIn {
             from {
                 opacity: 0;
-                transform: translateY(40px) scale(0.9);
+                transform: translateY(20px);
             }
 
             to {
@@ -267,52 +218,47 @@ error_log('✅ [INDEX] Renderizando vista');
         input {
             width: 100%;
             padding: 1rem 1.25rem;
-            background: var(--dark-1);
-            border: 3px solid var(--border-hard);
-            border-radius: 0;
-            color: var(--text);
-            font-size: 1.1rem;
-            font-family: monospace;
+            background: var(--bg-input);
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
+            color: var(--text-main);
+            font-size: 1rem;
+            font-family: inherit;
             outline: none;
-            transition: all 0.15s ease;
-            box-shadow: 4px 4px 0 rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
         }
 
         select:focus,
         input:focus {
+            background: #fff;
             border-color: var(--primary);
-            background: #000;
-            box-shadow: 6px 6px 0 var(--primary);
-            transform: translate(-2px, -2px);
+            box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.15);
+            transform: translateY(-1px);
         }
 
         button {
             width: 100%;
             margin-top: 2.5rem;
             padding: 1.25rem;
-            border: 3px solid var(--border-hard);
-            border-radius: 0;
-            background: var(--primary);
-            color: var(--dark-1);
-            font-size: 1.2rem;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+            border: none;
+            border-radius: var(--radius-md);
+            background: var(--text-main);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.15s ease;
-            box-shadow: var(--shadow-brutal-sm);
+            transition: all 0.2s ease;
+            box-shadow: var(--shadow-md);
         }
 
         button:hover {
-            background: #fde047;
-            transform: translate(-2px, -2px);
-            box-shadow: 6px 6px 0 #fff;
-            border-color: #000;
+            background: #000;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
         }
 
         button:active {
-            transform: translate(2px, 2px);
-            box-shadow: none;
+            transform: translateY(0);
         }
 
         .error {
