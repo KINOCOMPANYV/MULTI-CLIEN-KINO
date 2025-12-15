@@ -22,38 +22,40 @@
     }
 
     :root {
-      /* Minimalismo Moderno: Elegante, Dinámico y Audaz */
-      --primary: #facc15;
-      /* Manteniendo identidad pero más limpio */
-      --primary-dim: #eab308;
-      --accent: #0ea5e9;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
+      /* Master Shop Theme: Clean, Bold, Professional */
+      --primary: #22c55e;
+      /* Vibrant Green */
+      --primary-dark: #16a34a;
+      --primary-light: #dcfce7;
 
-      --bg-body: #f8fafc;
+      --accent: #22c55e;
+      /* Unified accent */
+
+      --bg-body: #f3f4f6;
+      /* Cool Gray */
       --bg-card: #ffffff;
-      --bg-input: #f1f5f9;
+      --bg-sidebar: #ffffff;
 
-      --border-light: rgba(0, 0, 0, 0.06);
+      --text-main: #111827;
+      /* Deep Black */
+      --text-muted: #6b7280;
+
+      --border-light: #e5e7eb;
       --border-focus: var(--primary);
 
-      --text-main: #0f172a;
-      --text-muted: #64748b;
+      --font-display: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-body: 'Inter', system-ui, -apple-system, sans-serif;
 
-      --font-display: 'Inter', -apple-system, sans-serif;
-      --font-body: 'Inter', -apple-system, sans-serif;
-
-      --ease-spring: cubic-bezier(0.4, 0, 0.2, 1);
-
-      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
       --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
       --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-      --shadow-hover: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 24px;
+      --radius-sm: 6px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      /* More standard modern radius, less rounded than before */
+
+      --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     html {
@@ -80,135 +82,142 @@
         radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.05), transparent 25%);
     }
 
-    /* Modern Minimalist Card */
+    /* Layout Structure */
+    body {
+      display: flex;
+      background: var(--bg-body);
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 260px;
+      background: var(--bg-sidebar);
+      border-right: 1px solid var(--border-light);
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem;
+      z-index: 50;
+    }
+
+    .logo-area {
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--text-main);
+      font-weight: 800;
+      font-size: 1.25rem;
+      letter-spacing: -0.5px;
+    }
+
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-item {
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: var(--transition);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .nav-item:hover {
+      background: var(--bg-body);
+      color: var(--text-main);
+    }
+
+    .nav-item.active {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      font-weight: 600;
+    }
+
+    /* Main Content Area */
+    .main-wrapper {
+      margin-left: 260px;
+      flex: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-header {
+      height: 64px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .content-area {
+      padding: 2rem;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Existing Card Styles Adapted */
     .liquid-glass {
       background: var(--bg-card);
       border: 1px solid var(--border-light);
       border-radius: var(--radius-lg);
-      box-shadow: var(--shadow-lg);
-      position: relative;
-      overflow: hidden;
-      transition: all 0.3s var(--ease-spring);
+      box-shadow: var(--shadow-sm);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
     }
 
     .liquid-glass:hover {
-      box-shadow: var(--shadow-hover);
-      transform: translateY(-4px);
-      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
     }
 
-    .liquid-glass::before {
-      display: none;
-    }
-
-    .liquid-glass::after {
-      display: none;
-    }
-
-    /* Main Card */
-    .main-card {
-      width: 100%;
-      max-width: 1100px;
-      border-radius: 32px;
-      animation: cardIn .8s var(--ease-smooth)
-    }
-
-    .main-card.hidden {
-      display: none
-    }
-
-    @keyframes cardIn {
-      from {
-        opacity: 0;
-        transform: translateY(40px) scale(.96)
-      }
-
-      to {
-        opacity: 1;
-        transform: none
-      }
-    }
-
-    /* Header - Neobrutalismo */
-    .header {
-      padding: 2rem 2.5rem;
-      border-bottom: 3px solid var(--border-hard);
-      text-align: center;
-      background: var(--dark-3);
-    }
-
-    .header h1 {
-      font-family: var(--font-display);
-      font-size: 2.5rem;
-      font-weight: 900;
-      color: var(--primary);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      text-shadow: 3px 3px 0 var(--dark-1);
-    }
-
-    /* Tabs - Neobrutalismo */
-    .tabs {
-      display: flex;
-      background: var(--dark-2);
-      border-bottom: 3px solid var(--border-hard);
-    }
-
-    .tab {
-      flex: 1;
-      padding: 1.25rem 1rem;
-      text-align: center;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-muted);
-      transition: all .15s var(--ease-smooth);
-      position: relative;
-      border-right: 1px solid var(--border-hard);
-    }
-
-    .tab:last-child {
-      border-right: none;
-    }
-
-    .tab:hover {
-      color: var(--text);
-      background: var(--dark-3);
-    }
-
-    .tab.active {
-      color: var(--dark-1);
-      background: var(--primary);
-    }
-
-    .tab.active::after {
-      display: none;
-    }
-
-    /* Content */
-    .content {
-      padding: 2rem
+    /* Hide Old Elements */
+    .header,
+    .tabs,
+    .app {
+      display: none !important;
+      /* Force hide old structure styling */
     }
 
     .tab-content {
-      animation: fadeUp .4s var(--ease-smooth)
+      animation: fadeIn 0.3s ease-out;
     }
 
     .tab-content.hidden {
-      display: none
+      display: none;
     }
 
-    @keyframes fadeUp {
+    @keyframes fadeIn {
       from {
         opacity: 0;
-        transform: translateY(16px)
+        transform: translateY(10px);
       }
 
       to {
         opacity: 1;
-        transform: none
+        transform: translateY(0);
       }
     }
 
@@ -865,96 +874,100 @@
 
     <div id="toast-container"></div>
 
-    <!-- Main Content -->
-    <div id="mainContent" class="main-card liquid-glass hidden">
-      <div class="header">
-        <h1>KINO COMPANY SAS V1</h1>
+    <!-- Estructura Nueva -->
+    <aside class="sidebar">
+      <div class="logo-area">
+        <span style="font-size: 1.5rem;">⚡</span>
+        <span>MasterKino</span>
       </div>
-      <nav class="tabs">
-        <div class="tab active" data-tab="tab-search">🔍 Buscar</div>
-        <div class="tab" data-tab="tab-upload">📤 Subir</div>
-        <div class="tab" data-tab="tab-list">📋 Consultar</div>
-        <div class="tab" data-tab="tab-code">🏷️ Por Código</div>
+
+      <nav class="nav-menu">
+        <div class="nav-item active" onclick="switchTab('search')">
+          <span>🔍</span> Buscar
+        </div>
+        <div class="nav-item" onclick="switchTab('upload')">
+          <span>📤</span> Cargar PDF
+        </div>
+        <div class="nav-item" onclick="switchTab('clients')">
+          <span>👥</span> Clientes
+        </div>
+        <div class="nav-item" onclick="switchTab('audit')">
+          <span>📋</span> Auditoría
+        </div>
       </nav>
-      <div class="content">
-        <!-- TAB: SEARCH -->
+
+      <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-light);">
+        <div class="nav-item" style="color: var(--danger);" onclick="window.location.href='login.php?logout=1'">
+          <span>🚪</span> Salir
+        </div>
+      </div>
+    </aside>
+
+    <div class="main-wrapper">
+      <header class="top-header">
+        <div>
+          <h2 id="page-title" style="font-size: 1.1rem; font-weight: 600;">Panel de Control</h2>
+        </div>
+        <div class="user-profile">
+          <span style="font-size: 0.9rem; font-weight: 500;">Hola, <strong>Usuario</strong></span>
+          <div style="width: 32px; height: 32px; background: var(--border-light); border-radius: 50%;"></div>
+        </div>
+      </header>
+
+      <div class="content-area">
+        <!-- Sección Buscar -->
         <div id="tab-search" class="tab-content">
-          <h2 class="section-title">Búsqueda Inteligente</h2>
-          <div class="form-group"><textarea id="searchInput" rows="6" placeholder="Pega aquí tus códigos..."></textarea>
+          <div class="liquid-glass">
+            <div class="section-title">Buscador Inteligente</div>
+            <div class="form-group">
+              <input type="text" id="search-input" placeholder="Escribe tu código o búsqueda aquí..." autofocus>
+            </div>
+
+            <div class="flex gap-4" style="margin-top: 1rem;">
+              <button class="btn btn--primary" id="btn-search-db">Buscar en DB</button>
+              <button class="btn btn--secondary" id="btn-search-pdf">Buscar en PDF</button>
+            </div>
           </div>
-          <div class="flex gap-4 mb-4">
-            <button onclick="doSearch()" class="btn btn--primary btn--flex1">🔍 Buscar</button>
-            <button onclick="clearSearch()" class="btn btn--secondary btn--flex1">🗑️ Limpiar</button>
-          </div>
-          <div id="search-alert" class="alert alert--error hidden"></div>
-          <div id="results-search" class="bento"></div>
+
+          <div id="results-area" class="space-y-4"></div>
         </div>
 
-        <!-- TAB: UPLOAD -->
+        <!-- Sección Cargar -->
         <div id="tab-upload" class="tab-content hidden">
-          <h2 class="section-title">Subir / Editar Documento</h2>
-          <div class="mode-selector">
-            <button type="button" onclick="setUploadMode('manual')" id="btn-mode-manual" class="mode-btn active">✋
-              Manual</button>
-            <button type="button" onclick="setUploadMode('auto')" id="btn-mode-auto" class="mode-btn">🤖
-              Automática</button>
-          </div>
-          <div id="upload-help-text" class="alert alert--warning hidden"></div>
-          <form id="form-upload" enctype="multipart/form-data">
-            <input id="docId" type="hidden" name="id" />
-            <div class="form-group"><label>Nombre</label><input id="name" name="name" type="text" required
-                placeholder="Nombre del documento"></div>
-            <div class="form-group"><label>Fecha</label><input id="date" name="date" type="date" required></div>
-            <div class="form-group">
-              <label>PDF o Imagen</label>
-              <input id="file" name="file" type="file" accept="application/pdf,image/*"
-                onchange="handleFileSelect(this)" style="padding:.75rem">
-              <p id="uploadWarning" class="alert alert--error mt-4 hidden">Archivo excede 10 MB.</p>
-              <div id="auto-extract-status" class="hidden alert alert--warning mt-4"></div>
-            </div>
-            <div class="form-group">
-              <label>Códigos (uno por línea)</label>
-              <textarea id="codes" name="codes" rows="6" style="font-family:monospace"
-                placeholder="Códigos aquí..."></textarea>
-              <p id="code-count" style="text-align:right;color:var(--text-muted);font-size:.85rem;margin-top:.5rem">0
-                códigos</p>
-            </div>
-            <div id="verify-warning" class="alert alert--warning hidden"><strong>⚠️ VERIFICA LOS CÓDIGOS</strong>
-              <p style="margin-top:.5rem">Revisa y edita si es necesario.</p>
-            </div>
-            <button type="submit" class="btn btn--primary btn--full mt-4">💾 Guardar</button>
-          </form>
         </div>
+        <button type="submit" class="btn btn--primary btn--full mt-4">💾 Guardar</button>
+        </form>
+      </div>
 
-        <!-- TAB: LIST -->
-        <div id="tab-list" class="tab-content hidden">
-          <h2 class="section-title">Consultar Documentos</h2>
-          <div class="flex gap-4 mb-4" style="flex-wrap:wrap">
-            <input id="consultFilterInput" type="text" style="flex:1;min-width:200px" placeholder="Filtrar..."
-              oninput="doConsultFilter()">
-            <button onclick="clearConsultFilter()" class="btn btn--secondary">Limpiar</button>
-            <button onclick="downloadCsv()" class="btn btn--accent">📊 CSV</button>
-            <button onclick="downloadPdfs()" class="btn btn--primary">📁 PDFs</button>
-          </div>
-          <div id="results-list" class="bento"></div>
+      <!-- TAB: LIST -->
+      <div id="tab-list" class="tab-content hidden">
+        <h2 class="section-title">Consultar Documentos</h2>
+        <div class="flex gap-4 mb-4" style="flex-wrap:wrap">
+          <input id="consultFilterInput" type="text" style="flex:1;min-width:200px" placeholder="Filtrar..."
+            oninput="doConsultFilter()">
+          <button onclick="clearConsultFilter()" class="btn btn--secondary">Limpiar</button>
+          <button onclick="downloadCsv()" class="btn btn--accent">📊 CSV</button>
+          <button onclick="downloadPdfs()" class="btn btn--primary">📁 PDFs</button>
         </div>
+        <div id="results-list" class="bento"></div>
+      </div>
 
-        <!-- TAB: CODE -->
-        <div id="tab-code" class="tab-content hidden">
-          <h2 class="section-title">Búsqueda por Código</h2>
-          <div class="form-group" style="position:relative">
-            <input id="codeInput" type="text" placeholder="Código (ej: ABC123)" autocomplete="off">
-            <div id="suggestions" class="hidden"></div>
-          </div>
-          <button onclick="doCodeSearch()" class="btn btn--primary btn--full mb-4">🔍 Buscar</button>
-          <div id="results-code" class="bento"></div>
+      <!-- TAB: CODE -->
+      <div id="tab-code" class="tab-content hidden">
+        <h2 class="section-title">Búsqueda por Código</h2>
+        <div class="form-group" style="position:relative">
+          <input id="codeInput" type="text" placeholder="Código (ej: ABC123)" autocomplete="off">
+          <div id="suggestions" class="hidden"></div>
         </div>
+        <button onclick="doCodeSearch()" class="btn btn--primary btn--full mb-4">🔍 Buscar</button>
+        <div id="results-code" class="bento"></div>
       </div>
     </div>
+  </div>
 
-    <footer class="footer">
-      <p>Elaborado por <strong>KINO GENIUS</strong></p>
-    </footer>
+  <footer class="footer">
+    <p>Elaborado por <strong>KINO GENIUS</strong></p>
+  </footer>
   </div>
 
   <script>
