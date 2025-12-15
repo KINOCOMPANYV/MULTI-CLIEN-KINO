@@ -2,93 +2,65 @@
 <html lang="es">
 
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MasterKino - Panel</title>
+
+  <!-- PDF.js Support -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script>(function () { const o = console.error; console.error = function (...a) { if (a[0] && typeof a[0] === 'string' && a[0].includes('Expected number')) return; o.apply(console, a); }; window.onerror = function () { return true; }; })();</script>
-  <meta charset="UTF-8" />
-  <meta name="google" content="notranslate">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link
-    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap"
-    rel="stylesheet">
-  <title>Buscador de Documentos</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box
-    }
 
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* VARIABLES GLOBALES */
     :root {
-      /* Master Shop Theme: Clean, Bold, Professional */
+      /* Theme: Master Shop (Green/White/Gray) */
       --primary: #22c55e;
-      /* Vibrant Green */
       --primary-dark: #16a34a;
       --primary-light: #dcfce7;
 
       --accent: #22c55e;
-      /* Unified accent */
 
       --bg-body: #f3f4f6;
-      /* Cool Gray */
       --bg-card: #ffffff;
       --bg-sidebar: #ffffff;
 
       --text-main: #111827;
-      /* Deep Black */
       --text-muted: #6b7280;
 
       --border-light: #e5e7eb;
       --border-focus: var(--primary);
 
-      --font-display: 'Inter', system-ui, -apple-system, sans-serif;
-      --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-
-      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 
       --radius-sm: 6px;
       --radius-md: 8px;
       --radius-lg: 12px;
-      /* More standard modern radius, less rounded than before */
 
       --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
-    html {
-      scroll-behavior: smooth
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
     body {
-      font-family: var(--font-body);
+      font-family: 'Inter', system-ui, sans-serif;
       background: var(--bg-body);
       color: var(--text-main);
+      display: flex;
       min-height: 100vh;
       overflow-x: hidden;
-      line-height: 1.5;
     }
 
-    /* Ambient Background - Subtle & Elegant */
-    .ambient {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      background:
-        radial-gradient(circle at 15% 50%, rgba(250, 204, 21, 0.08), transparent 25%),
-        radial-gradient(circle at 85% 30%, rgba(14, 165, 233, 0.05), transparent 25%);
-    }
-
-    /* Layout Structure */
-    body {
-      display: flex;
-      background: var(--bg-body);
-    }
-
-    /* Sidebar Navigation */
+    /* SIDEBAR */
     .sidebar {
       width: 260px;
       background: var(--bg-sidebar);
@@ -108,16 +80,9 @@
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      color: var(--text-main);
-      font-weight: 800;
       font-size: 1.25rem;
-      letter-spacing: -0.5px;
-    }
-
-    .nav-menu {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
+      font-weight: 800;
+      color: var(--text-main);
     }
 
     .nav-item {
@@ -130,6 +95,7 @@
       display: flex;
       align-items: center;
       gap: 0.75rem;
+      margin-bottom: 0.5rem;
     }
 
     .nav-item:hover {
@@ -143,13 +109,14 @@
       font-weight: 600;
     }
 
-    /* Main Content Area */
+    /* MAIN CONTENT */
     .main-wrapper {
       margin-left: 260px;
       flex: 1;
-      min-height: 100vh;
       display: flex;
       flex-direction: column;
+      min-width: 0;
+      /* Prevent flex overflow */
     }
 
     .top-header {
@@ -165,12 +132,6 @@
       z-index: 40;
     }
 
-    .user-profile {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
     .content-area {
       padding: 2rem;
       max-width: 1200px;
@@ -178,7 +139,7 @@
       margin: 0 auto;
     }
 
-    /* Existing Card Styles Adapted */
+    /* COMPONENTS */
     .liquid-glass {
       background: var(--bg-card);
       border: 1px solid var(--border-light);
@@ -186,909 +147,365 @@
       box-shadow: var(--shadow-sm);
       padding: 1.5rem;
       margin-bottom: 1.5rem;
+      transition: var(--transition);
     }
 
     .liquid-glass:hover {
       box-shadow: var(--shadow-md);
-      transform: translateY(-2px);
-    }
-
-    /* Hide Old Elements */
-    .header,
-    .tabs,
-    .app {
-      display: none !important;
-      /* Force hide old structure styling */
-    }
-
-    .tab-content {
-      animation: fadeIn 0.3s ease-out;
-    }
-
-    .tab-content.hidden {
-      display: none;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
     }
 
     .section-title {
-      font-family: var(--font-display);
-      font-size: 2rem;
-      font-weight: 900;
-      margin-bottom: 1.5rem;
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-      color: var(--text);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .section-title:hover {
-      color: var(--primary);
-    }
-
-    .section-title::before {
-      content: '';
-      width: 6px;
-      height: 32px;
-      background: var(--primary);
-    }
-
-    /* Bento Grid */
-    .bento {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1rem
-    }
-
-    /* Form Elements */
-    textarea,
-    input[type="text"],
-    input[type="date"],
-    input[type="password"],
-    select {
-      width: 100%;
-      padding: 1rem 1.25rem;
-      background: #ffffff;
-      border: 1px solid var(--glass-border);
-      border-radius: 16px;
-      color: var(--text);
-      font-size: 1rem;
-      font-family: inherit;
-      transition: all .3s var(--ease-smooth);
-      outline: none;
-    }
-
-    textarea:focus,
-    input:focus,
-    select:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 4px var(--accent-glow), 0 0 30px -10px var(--accent);
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 140px
-    }
-
-    label {
-      display: block;
-      margin-bottom: .5rem;
-      font-weight: 500;
-      color: var(--text-muted);
-      font-size: .9rem
-    }
-
-    .form-group {
-      margin-bottom: 1.25rem
-    }
-
-    /* Buttons - Neobrutalismo */
-    .btn {
-      padding: 1rem 1.75rem;
-      border-radius: 0;
-      font-size: 1rem;
+      font-size: 1.25rem;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      border: 3px solid var(--border-hard);
-      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+
+    .btn {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: .5rem;
-      transition: all .1s ease;
-      position: relative;
-      box-shadow: var(--shadow-brutal-sm);
-    }
-
-    .btn:hover {
-      transform: translate(-2px, -2px);
-      box-shadow: 4px 4px 0 var(--primary);
-    }
-
-    .btn:active {
-      transform: translate(2px, 2px);
-      box-shadow: none;
+      padding: 0.5rem 1rem;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition);
+      gap: 0.5rem;
     }
 
     .btn--primary {
       background: var(--primary);
-      color: var(--dark-1);
-      border-color: var(--primary);
+      color: white;
     }
 
     .btn--primary:hover {
-      background: #fde047;
+      background: var(--primary-dark);
     }
 
     .btn--secondary {
-      background: var(--dark-3);
-      color: var(--text);
-      border-color: var(--border-hard);
+      background: #e5e7eb;
+      color: var(--text-main);
     }
 
     .btn--secondary:hover {
-      border-color: var(--text);
-      box-shadow: 4px 4px 0 var(--text);
-    }
-
-    .btn--accent {
-      background: var(--accent);
-      color: var(--dark-1);
-      border-color: var(--accent);
+      background: #d1d5db;
     }
 
     .btn--danger {
-      background: var(--danger);
-      color: #fff;
-      border-color: var(--danger);
+      background: #ef4444;
+      color: white;
     }
 
-    .btn--warning {
-      background: var(--warning);
-      color: var(--dark-1);
-      border-color: var(--warning);
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      margin-bottom: 1rem;
     }
 
-    .btn--highlight {
-      background: var(--primary);
-      color: var(--dark-1);
+    input:focus,
+    textarea:focus {
+      outline: 2px solid var(--primary-light);
       border-color: var(--primary);
-      font-weight: 900;
     }
 
-    .btn--full {
-      width: 100%
+    .hidden {
+      display: none !important;
     }
 
-    .btn--flex1 {
-      flex: 1
-    }
-
-    /* Result Cards - Neobrutalismo */
-    .result-card {
-      background: var(--dark-3);
-      border: 3px solid var(--border-hard);
-      padding: 1.5rem;
-      transition: all .15s ease;
-      box-shadow: var(--shadow-brutal-sm);
-    }
-
-    .result-card:hover {
-      border-color: var(--primary);
-      transform: translate(-2px, -2px);
-      box-shadow: 4px 4px 0 var(--primary);
-    }
-
-    .result-title {
-      font-family: var(--font-display);
-      font-size: 1.25rem;
-      font-weight: 800;
-      margin-bottom: .5rem;
-      color: var(--primary);
-    }
-
-    .result-meta {
-      font-size: .875rem;
-      color: var(--text-muted);
-      margin-bottom: .75rem;
-      font-family: monospace;
-    }
-
-    .result-link {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 700;
-      text-transform: uppercase;
-      font-size: .875rem;
-      letter-spacing: 1px;
-    }
-
-    .result-link:hover {
-      color: #fff;
-      text-decoration: underline;
-    }
-
-    .result-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: .5rem;
-      margin-top: 1rem;
-    }
-
-    .result-actions .btn {
-      padding: .5rem .75rem;
-      font-size: .75rem;
-    }
-
-    .codes-pre {
-      margin-top: 1rem;
-      padding: 1rem;
-      background: var(--dark-1);
-      border: 2px solid var(--border-hard);
-      font-family: 'Courier New', monospace;
-      font-size: .85rem;
-      color: var(--accent);
-      max-height: 180px;
-      overflow-y: auto;
-    }
-
-    .codes-pre.hidden {
-      display: none;
-    }
-
-    /* Overlay & Modal */
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.85);
-      backdrop-filter: blur(12px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-    }
-
-    .overlay.hidden {
-      display: none
-    }
-
-    .modal {
-      width: 90%;
-      max-width: 420px;
-      padding: 2.5rem;
-      border-radius: 28px;
-      animation: modalIn .5s var(--ease-bounce);
-    }
-
-    @keyframes modalIn {
-      from {
-        opacity: 0;
-        transform: scale(.9) translateY(20px)
-      }
-
-      to {
-        opacity: 1;
-        transform: none
-      }
-    }
-
-    .modal h2 {
-      font-family: var(--font-display);
-      font-size: 1.5rem;
-      margin-bottom: .5rem;
-      background: linear-gradient(90deg, #fff, var(--accent));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent
-    }
-
-    .modal p {
-      color: var(--text-muted);
-      margin-bottom: 1.5rem
-    }
-
-    /* Toast */
-    #toast-container {
-      position: fixed;
-      top: 1.5rem;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      flex-direction: column;
-      gap: .75rem;
-      z-index: 10000
-    }
-
-    .toast {
-      background: linear-gradient(135deg, var(--primary), #a855f7);
-      color: #fff;
-      padding: 1rem 1.5rem;
-      border-radius: 16px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      animation: toastIn .4s var(--ease-bounce);
-    }
-
-    @keyframes toastIn {
-      from {
-        transform: translateY(-20px);
-        opacity: 0
-      }
-
-      to {
-        transform: none;
-        opacity: 1
-      }
-    }
-
-    .toast button {
-      background: rgba(255, 255, 255, 0.2);
-      border: none;
-      color: #fff;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      cursor: pointer;
-      font-size: 1.1rem
-    }
-
-    /* Alerts */
-    .alert {
-      padding: 1rem;
-      border-radius: 12px;
-      margin-bottom: 1rem
-    }
-
-    .alert--warning {
-      background: rgba(245, 158, 11, 0.12);
-      border: 1px solid rgba(245, 158, 11, 0.25);
-      color: #fcd34d
-    }
-
-    .alert--error {
-      background: rgba(239, 68, 68, 0.12);
-      border: 1px solid rgba(239, 68, 68, 0.25);
-      color: #fca5a5
-    }
-
-    .alert--success {
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.25);
-      color: #6ee7b7
-    }
-
-    .alert.hidden {
-      display: none
-    }
-
-    /* Mobile Responsive Tabs */
-    @media (max-width: 640px) {
-      .tabs {
-        flex-wrap: wrap;
-      }
-
-      .tab {
-        flex: 0 0 50%;
-        border-bottom: 2px solid var(--border-hard);
-        padding: 1rem 0.5rem;
-        font-size: 0.8rem;
-      }
-
-      .tab:nth-child(odd) {
-        border-right: 2px solid var(--border-hard);
-      }
-
-      .tab:nth-child(even) {
-        border-right: none;
-      }
-
-      /* Adjust content padding for mobile */
-      .content {
-        padding: 1.5rem 1rem;
-      }
-
-      .header h1 {
-        font-size: 1.75rem;
-      }
-    }
-
-    /* Mode Selector */
-    .mode-selector {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1.5rem
-    }
-
-    .mode-btn {
-      flex: 1;
-      padding: 1.25rem;
-      background: rgba(0, 0, 0, 0.3);
-      border: 2px solid var(--glass-border);
-      border-radius: 20px;
-      color: var(--text-muted);
-      font-weight: 600;
-      cursor: pointer;
-      transition: all .3s var(--ease-smooth);
-      text-align: center;
-    }
-
-    .mode-btn:hover {
-      border-color: rgba(139, 92, 246, 0.4)
-    }
-
-    .mode-btn.active {
-      background: rgba(139, 92, 246, 0.15);
-      border-color: var(--primary);
-      color: var(--text)
-    }
-
-    /* Footer */
-    .footer {
-      text-align: center;
-      padding: 2.5rem 1rem;
-      color: var(--text-muted);
-      font-size: .9rem;
-      margin-top: auto
-    }
-
-    .footer strong {
-      background: linear-gradient(90deg, var(--primary), var(--accent));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      font-weight: 700
-    }
-
-    /* Suggestions */
-    #suggestions {
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: rgba(15, 23, 42, 0.98);
-      border: 1px solid var(--glass-border);
-      border-radius: 0 0 16px 16px;
-      max-height: 200px;
-      overflow-y: auto;
-      z-index: 20
-    }
-
-    #suggestions.hidden {
-      display: none
-    }
-
-    #suggestions div {
-      padding: .875rem 1rem;
-      cursor: pointer;
-      transition: background .2s
-    }
-
-    #suggestions div:hover {
-      background: rgba(139, 92, 246, 0.2)
-    }
-
-    /* Settings */
-    .settings-group {
-      margin-bottom: 1.25rem
-    }
-
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: .75rem;
-      cursor: pointer;
-      padding: .5rem 0
-    }
-
-    .checkbox-label input[type="checkbox"] {
-      width: 20px;
-      height: 20px;
-      accent-color: var(--accent)
-    }
-
-    /* Spinner */
+    /* UTILS */
     .spinner {
       width: 20px;
       height: 20px;
-      border: 2px solid rgba(255, 255, 255, 0.2);
-      border-top-color: var(--accent);
+      border: 2px solid rgba(0, 0, 0, 0.1);
+      border-left-color: var(--text-main);
       border-radius: 50%;
-      animation: spin .7s linear infinite
+      animation: spin 1s linear infinite;
     }
 
     @keyframes spin {
       to {
-        transform: rotate(360deg)
+        transform: rotate(360deg);
       }
     }
 
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px
-    }
-
-    ::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.2)
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--primary);
-      border-radius: 4px
-    }
-
-    /* Utilities */
-    .flex {
-      display: flex
-    }
-
-    .gap-2 {
-      gap: .5rem
-    }
-
-    .gap-4 {
-      gap: 1rem
-    }
-
-    .mb-4 {
-      margin-bottom: 1rem
-    }
-
-    .mt-4 {
-      margin-top: 1rem
-    }
-
-    .text-center {
-      text-align: center
-    }
-
-    .space-y-4>*+* {
-      margin-top: 1rem
-    }
-
-    /* Responsive */
-    @media(max-width:768px) {
-      .app {
-        padding: 1rem
-      }
-
-      .content {
-        padding: 1.5rem
-      }
-
-      .tabs {
-        overflow-x: auto
-      }
-
-      .tab {
-        padding: 1rem .75rem;
-        font-size: .875rem;
-        white-space: nowrap
-      }
-
-      .mode-selector {
-        flex-direction: column
-      }
-
-      .result-actions {
-        flex-direction: column
-      }
-
-      .result-actions .btn {
-        width: 100%
-      }
-
-      .bento {
-        grid-template-columns: 1fr
-      }
+    /* Modal Overlay */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   </style>
 </head>
 
 <body>
-  <div class="ambient"></div>
-  <div class="orb orb-1"></div>
-  <div class="orb orb-2"></div>
-  <div class="orb orb-3"></div>
 
-  <div class="app">
-    <!-- Login Overlay -->
-    <div id="loginOverlay" class="overlay">
-      <div class="modal liquid-glass">
-        <h2>🔐 Acceso Restringido</h2>
-        <p>Ingrese su número de acceso para continuar</p>
-        <input id="accessInput" type="password" placeholder="Número de acceso" />
-        <button id="submitAccess" class="btn btn--primary btn--full mt-4">Ingresar</button>
-        <p id="errorMsg" class="alert alert--error mt-4 hidden">Número incorrecto.</p>
-      </div>
-    </div>
-
-    <!-- Confirm Dialog -->
-    <div id="confirmOverlay" class="overlay hidden">
-      <div class="modal liquid-glass text-center">
-        <p id="confirmMsg" style="font-size:1.1rem;margin-bottom:1.5rem">¿Confirmar acción?</p>
-        <div class="flex gap-4">
-          <button id="confirmCancel" class="btn btn--secondary btn--flex1">Cancelar</button>
-          <button id="confirmOk" class="btn btn--primary btn--flex1">Aceptar</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Delete Key Dialog -->
-    <div id="deleteOverlay" class="overlay hidden">
-      <div class="modal liquid-glass">
-        <h2>🔑 Clave de Eliminación</h2>
-        <p>Ingrese la clave para eliminar este documento</p>
-        <input id="deleteKeyInput" type="password" placeholder="Clave de borrado" />
-        <p id="deleteKeyError" class="alert alert--error mt-4 hidden">Clave incorrecta.</p>
-        <button id="deleteKeyOk" class="btn btn--danger btn--full mt-4">Eliminar</button>
-        <button id="deleteKeyCancel" class="btn btn--secondary btn--full mt-4">Cancelar</button>
-      </div>
-    </div>
-
-    <!-- Extraction Settings Modal -->
-    <div id="extractionSettingsModal" class="overlay hidden">
-      <div class="modal liquid-glass">
-        <h2>⚙️ Configurar Escaneo</h2>
-        <p>Define cómo leeremos este documento</p>
-        <div class="settings-group">
-          <label>Prefijos de código:</label>
-          <input id="setting-prefixes" type="text" value="Ref:, Factura:, Inv:, REF, Ref, Codigo:">
-        </div>
-        <div class="settings-group">
-          <label>Terminador:</label>
-          <select id="setting-terminator">
-            <option value="space">Espacio/Salto de Línea</option>
-            <option value="/">Barra (/)</option>
-            <option value="-">Guión (-)</option>
-            <option value=".">Punto (.)</option>
-            <option value="custom">Otro...</option>
-          </select>
-          <input id="setting-terminator-custom" type="text" class="hidden mt-4" placeholder="Carácter" maxlength="1">
-        </div>
-        <div class="settings-group">
-          <label class="checkbox-label"><input id="setting-join-hyphens" type="checkbox" checked><span>Unir códigos
-              cortados</span></label>
-          <label class="checkbox-label"><input id="setting-ocr" type="checkbox" checked disabled><span
-              style="color:var(--accent)">Modo Inteligente (OCR)</span></label>
-        </div>
-        <div class="flex gap-4 mt-4">
-          <button onclick="cancelExtraction()" class="btn btn--secondary btn--flex1">Cancelar</button>
-          <button onclick="confirmExtraction()" class="btn btn--primary btn--flex1">🚀 Escanear</button>
-        </div>
-      </div>
-    </div>
-
-    <div id="toast-container"></div>
-
-    <!-- Estructura Nueva -->
-    <aside class="sidebar">
-      <div class="logo-area">
-        <span style="font-size: 1.5rem;">⚡</span>
-        <span>MasterKino</span>
-      </div>
-
-      <nav class="nav-menu">
-        <div class="nav-item active" onclick="switchTab('search')">
-          <span>🔍</span> Buscar
-        </div>
-        <div class="nav-item" onclick="switchTab('upload')">
-          <span>📤</span> Cargar PDF
-        </div>
-        <div class="nav-item" onclick="switchTab('clients')">
-          <span>👥</span> Clientes
-        </div>
-        <div class="nav-item" onclick="switchTab('audit')">
-          <span>📋</span> Auditoría
-        </div>
-      </nav>
-
-      <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-light);">
-        <div class="nav-item" style="color: var(--danger);" onclick="window.location.href='login.php?logout=1'">
-          <span>🚪</span> Salir
-        </div>
-      </div>
-    </aside>
-
-    <div class="main-wrapper">
-      <header class="top-header">
-        <div>
-          <h2 id="page-title" style="font-size: 1.1rem; font-weight: 600;">Panel de Control</h2>
-        </div>
-        <div class="user-profile">
-          <span style="font-size: 0.9rem; font-weight: 500;">Hola, <strong>Usuario</strong></span>
-          <div style="width: 32px; height: 32px; background: var(--border-light); border-radius: 50%;"></div>
-        </div>
-      </header>
-
-      <div class="content-area">
-        <!-- Sección Buscar -->
-        <div id="tab-search" class="tab-content">
-          <div class="liquid-glass">
-            <div class="section-title">Buscador Inteligente</div>
-            <div class="form-group">
-              <input type="text" id="search-input" placeholder="Escribe tu código o búsqueda aquí..." autofocus>
-            </div>
-
-            <div class="flex gap-4" style="margin-top: 1rem;">
-              <button class="btn btn--primary" id="btn-search-db">Buscar en DB</button>
-              <button class="btn btn--secondary" id="btn-search-pdf">Buscar en PDF</button>
-            </div>
-          </div>
-
-          <div id="results-area" class="space-y-4"></div>
-        </div>
-
-        <!-- Sección Cargar -->
-        <div id="tab-upload" class="tab-content hidden">
-        </div>
-        <button type="submit" class="btn btn--primary btn--full mt-4">💾 Guardar</button>
-        </form>
-      </div>
-
-      <!-- TAB: LIST -->
-      <div id="tab-list" class="tab-content hidden">
-        <h2 class="section-title">Consultar Documentos</h2>
-        <div class="flex gap-4 mb-4" style="flex-wrap:wrap">
-          <input id="consultFilterInput" type="text" style="flex:1;min-width:200px" placeholder="Filtrar..."
-            oninput="doConsultFilter()">
-          <button onclick="clearConsultFilter()" class="btn btn--secondary">Limpiar</button>
-          <button onclick="downloadCsv()" class="btn btn--accent">📊 CSV</button>
-          <button onclick="downloadPdfs()" class="btn btn--primary">📁 PDFs</button>
-        </div>
-        <div id="results-list" class="bento"></div>
-      </div>
-
-      <!-- TAB: CODE -->
-      <div id="tab-code" class="tab-content hidden">
-        <h2 class="section-title">Búsqueda por Código</h2>
-        <div class="form-group" style="position:relative">
-          <input id="codeInput" type="text" placeholder="Código (ej: ABC123)" autocomplete="off">
-          <div id="suggestions" class="hidden"></div>
-        </div>
-        <button onclick="doCodeSearch()" class="btn btn--primary btn--full mb-4">🔍 Buscar</button>
-        <div id="results-code" class="bento"></div>
-      </div>
+  <!-- LOGIN OVERLAY -->
+  <div id="loginOverlay" class="overlay">
+    <div class="liquid-glass" style="width: 350px; text-align:center;">
+      <h2 style="margin-bottom:1rem">🔐 Acceso</h2>
+      <input type="password" id="accessInput" placeholder="Contraseña de cliente" autofocus>
+      <button id="submitAccess" class="btn btn--primary" style="width:100%">Ingresar</button>
+      <p id="errorMsg" style="color:red; margin-top:1rem; font-size:0.9rem" class="hidden"></p>
     </div>
   </div>
 
-  <footer class="footer">
-    <p>Elaborado por <strong>KINO GENIUS</strong></p>
-  </footer>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo-area">
+      <span>⚡ MasterKino</span>
+    </div>
+    <nav class="nav-menu">
+      <div class="nav-item active" onclick="switchTab('search', this)">
+        <span>🔍</span> Buscar
+      </div>
+      <div class="nav-item" onclick="switchTab('upload', this)">
+        <span>📤</span> Cargar
+      </div>
+      <div class="nav-item" onclick="switchTab('list', this)">
+        <span>📋</span> Listar
+      </div>
+    </nav>
+    <div style="margin-top:auto; border-top:1px solid var(--border-light); padding-top:1rem">
+      <div class="nav-item" style="color:#ef4444" onclick="window.location.href='login.php?logout=1'">
+        <span>🚪</span> Salir
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN WRAPPER -->
+  <div class="main-wrapper">
+    <header class="top-header">
+      <h2 id="page-title" style="font-size:1.1rem; font-weight:600">Buscador</h2>
+      <div style="display:flex; align-items:center; gap:0.5rem">
+        <span style="font-size:0.9rem">Cliente</span>
+        <div style="width:32px; height:32px; background:#e5e7eb; border-radius:50%"></div>
+      </div>
+    </header>
+
+    <div class="content-area">
+
+      <!-- TAB SEARCH -->
+      <div id="tab-search" class="tab-content">
+        <div class="liquid-glass">
+          <h3 class="section-title">Búsqueda Rápida</h3>
+          <div style="display:flex; gap:0.5rem">
+            <input type="text" id="searchInput" placeholder="Ingresa códigos aquí..." style="margin-bottom:0">
+            <button class="btn btn--primary" onclick="doSearch()">Buscar</button>
+            <button class="btn btn--secondary" onclick="clearSearch()">Limpiar</button>
+          </div>
+          <div id="search-status" style="margin-top:1rem"></div>
+        </div>
+        <div id="results-area"></div>
+      </div>
+
+      <!-- TAB UPLOAD -->
+      <div id="tab-upload" class="tab-content hidden">
+        <div class="liquid-glass">
+          <h3 class="section-title">Subir Documento (PDF)</h3>
+          <form id="uploadForm">
+            <label>Nombre del Documento</label>
+            <input type="text" name="name" required>
+
+            <label>Fecha</label>
+            <input type="date" name="date" required>
+
+            <label>Archivo PDF</label>
+            <input type="file" name="file" accept=".pdf" required>
+
+            <label>Códigos (Opcional, separados por enter)</label>
+            <textarea name="codes" rows="5"></textarea>
+
+            <button type="submit" class="btn btn--primary" style="width:100%">Guardar Documento</button>
+          </form>
+          <div id="upload-msg" style="margin-top:1rem"></div>
+        </div>
+      </div>
+
+      <!-- TAB LIST -->
+      <div id="tab-list" class="tab-content hidden">
+        <div class="liquid-glass" style="display:flex; justify-content:space-between; align-items:center">
+          <h3 class="section-title" style="margin:0">Mis Documentos</h3>
+          <button class="btn btn--secondary" onclick="loadList()">🔄 Recargar</button>
+        </div>
+        <div id="list-area"></div>
+      </div>
+
+    </div>
   </div>
 
   <script>
-    // Protection
-    document.addEventListener('contextmenu', e => e.preventDefault());
-    document.addEventListener('keydown', e => { if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && ['I', 'J', 'C'].includes(e.key)) || (e.ctrlKey && e.key === 'u')) e.preventDefault(); });
+    // --- CORE LOGIC ---
+    const params = new URLSearchParams(window.location.search);
+    const clientCode = params.get('c');
+    const apiUrl = 'api.php?c=' + encodeURIComponent(clientCode || '');
 
-    // Mouse light effect (Only for liquid-glass cards)
-    document.querySelectorAll('.liquid-glass').forEach(el => {
-      el.addEventListener('mousemove', e => { const r = el.getBoundingClientRect(); el.style.setProperty('--mouse-x', ((e.clientX - r.left) / r.width * 100) + '%'); el.style.setProperty('--mouse-y', ((e.clientY - r.top) / r.height * 100) + '%'); });
-    });
-
-    // Core
-    const apiBase = './api.php', params = new URLSearchParams(window.location.search), clientCode = params.get('c');
     if (!clientCode) window.location.href = 'login.php';
-    const apiUrl = `${apiBase}?c=${encodeURIComponent(clientCode)}`;
-    let fullList = [], pendingDeleteId = null, pendingFile = null, intervalId = null, currentUploadMode = 'manual';
 
-    // Client Config
-    (async function () { try { const r = await fetch(`${apiUrl}&action=get_client_config`); const c = await r.json(); if (c.color_primario) document.documentElement.style.setProperty('--primary', c.color_primario); if (c.color_secundario) document.documentElement.style.setProperty('--accent', c.color_secundario); if (c.titulo_app) { document.title = c.titulo_app; } } catch (e) { } })();
-
-    function startPolling(fn) { stopPolling(); intervalId = setInterval(fn, 60000); }
-    function stopPolling() { if (intervalId) clearInterval(intervalId); intervalId = null; }
-    function toast(msg, d = 3000) { const c = document.getElementById('toast-container'), e = document.createElement('div'); e.className = 'toast'; e.innerHTML = `<span>${msg}</span><button onclick="this.parentElement.remove()">×</button>`; c.appendChild(e); setTimeout(() => e.remove(), d); }
-    function confirmDialog(msg) { return new Promise(r => { const o = document.getElementById('confirmOverlay'); document.getElementById('confirmMsg').textContent = msg; o.classList.remove('hidden'); document.getElementById('confirmOk').onclick = () => { o.classList.add('hidden'); r(true); }; document.getElementById('confirmCancel').onclick = () => { o.classList.add('hidden'); r(false); }; }); }
-
-    // Login Overlay Logic
-    document.getElementById('submitAccess').onclick = async () => {
-      const p = document.getElementById('accessInput').value, b = document.getElementById('submitAccess'), e = document.getElementById('errorMsg');
-      b.disabled = true; b.innerHTML = '<div class="spinner"></div>'; e.classList.add('hidden');
-      try {
-        const f = new FormData(); f.append('action', 'login'); f.append('password', p);
-        const r = await fetch(apiUrl, { method: 'POST', body: f });
-        const d = await r.json();
-        if (d.success) {
-          document.getElementById('loginOverlay').classList.add('hidden');
-          // Removed 'mainContent' unhide as we structure differently now, layout is visible by default
-          initApp();
-        } else {
-          e.textContent = "Contraseña incorrecta."; e.classList.remove('hidden');
-        }
-      } catch (x) {
-        e.textContent = "Error de conexión."; e.classList.remove('hidden');
+    // --- TABS ---
+    function switchTab(tabName, navEl) {
+      // Update Nav
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      if (navEl) navEl.classList.add('active');
+      else {
+        // Find by text or index if navEl not passed (simple fallback)
+        // skipping for brevity, handled by onclick
       }
-      b.disabled = false; b.textContent = "Ingresar";
+
+      // Update Content
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById('tab-' + tabName).classList.remove('hidden');
+
+      // Update Title
+      const titles = { search: 'Buscador', upload: 'Cargar PDF', list: 'Listado' };
+      document.getElementById('page-title').textContent = titles[tabName] || 'Panel';
+
+      if (tabName === 'list') loadList();
+    }
+
+    // --- LOGIN ---
+    document.getElementById('submitAccess').onclick = async () => {
+      const pass = document.getElementById('accessInput').value;
+      const msg = document.getElementById('errorMsg');
+      if (!pass) return;
+
+      try {
+        const fd = new FormData();
+        fd.append('action', 'login');
+        fd.append('password', pass);
+
+        const req = await fetch(apiUrl, { method: 'POST', body: fd });
+        const res = await req.json();
+
+        if (res.success) {
+          document.getElementById('loginOverlay').classList.add('hidden');
+        } else {
+          msg.textContent = 'Contraseña inválida';
+          msg.classList.remove('hidden');
+        }
+      } catch (e) {
+        msg.textContent = 'Error de conexión';
+        msg.classList.remove('hidden');
+      }
     };
-    document.getElementById('accessInput').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('submitAccess').click(); });
 
-    function clearSearch() { document.getElementById('search-input').value = ''; document.getElementById('results-area').innerHTML = ''; }
+    // --- SEARCH ---
+    async function doSearch() {
+      const val = document.getElementById('searchInput').value.trim();
+      const area = document.getElementById('results-area');
+      area.innerHTML = '<div style="text-align:center; padding:2rem"><div class="spinner"></div></div>';
 
-    function initApp() {
-      // Initialize layout
-      switchTab('search'); // Show default tab
+      if (!val) { area.innerHTML = ''; return; }
 
-      const deleteOv = document.getElementById('deleteOverlay'), dkInput = document.getElementById('deleteKeyInput'), dkErr = document.getElementById('deleteKeyError');
-      document.getElementById('deleteKeyOk').onclick = async () => { const k = dkInput.value, b = document.getElementById('deleteKeyOk'); b.disabled = true; b.innerHTML = '<div class="spinner"></div>'; try { const f = new FormData(); f.append('action', 'verify_delete_key'); f.append('key', k); const r = await fetch(apiUrl, { method: 'POST', body: f }); const d = await r.json(); if (!d.success) { dkErr.classList.remove('hidden'); b.disabled = false; b.textContent = "Eliminar"; return; } deleteOv.classList.add('hidden'); dkErr.classList.add('hidden'); dkInput.value = ''; const ok = await confirmDialog('¿Eliminar permanentemente?'); if (ok) await deleteDoc(pendingDeleteId); } catch (x) { alert("Error de red."); } b.disabled = false; b.textContent = "Eliminar"; };
-      document.getElementById('deleteKeyCancel').onclick = () => { deleteOv.classList.add('hidden'); dkErr.classList.add('hidden'); dkInput.value = ''; };
+      const codes = val.split(/[\n\r,]+/).map(c => c.trim()).filter(Boolean);
 
-      // Button Handlers
-      document.getElementById('btn-search-db').onclick = doSearch;
-      // document.getElementById('btn-search-pdf').onclick = doSearchPdf; // Implementation pending?
+      try {
+        const fd = new FormData();
+        fd.append('action', 'search');
+        fd.append('codes', codes.join('\\n')); // API expects newline separated
 
-      // Upload Form
-      const uploadForm = document.getElementById('upload-form');
-      if (uploadForm) {
-        uploadForm.onsubmit = async e => {
-          e.preventDefault();
-          // Basic upload implementation
-          const w = document.getElementById('upload-status');
-          w.innerHTML = '<div class="spinner"></div> Subiendo...';
-          const curTab = 'upload'; // Assuming logic for upload tab
-          // Add upload logic here if consistent with sidebar structure
-        };
+        const req = await fetch(apiUrl, { method: 'POST', body: fd });
+        const res = await req.json();
+
+        if (!res || res.length === 0) {
+          area.innerHTML = '<div class="liquid-glass">No se encontraron documentos.</div>';
+          return;
+        }
+
+        renderDocs(res, area);
+
+      } catch (e) {
+        area.innerHTML = '<div style="color:red">Error en búsqueda: ' + e.message + '</div>';
       }
     }
 
-    // Adapted Render Function
-    function render(items, cid, hideActions) {
-      const ct = document.getElementById(cid);
-      if (!items || !items.length) { ct.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:2rem">No hay documentos.</p>'; return; }
-      ct.innerHTML = items.map(d => `
-            <div class="liquid-glass" style="padding:1rem; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center;">
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('results-area').innerHTML = '';
+    }
+
+    // --- UPLOAD ---
+    document.getElementById('uploadForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const btn = form.querySelector('button');
+      const msg = document.getElementById('upload-msg');
+
+      btn.disabled = true;
+      btn.textContent = 'Subiendo...';
+      msg.innerHTML = '';
+
+      try {
+        const fd = new FormData(form);
+        fd.append('action', 'upload');
+
+        const req = await fetch(apiUrl, { method: 'POST', body: fd });
+        const res = await req.json();
+
+        if (res.success || res.message) {
+          msg.innerHTML = '<span style="color:green">✅ ' + (res.message || 'Subido con éxito') + '</span>';
+          form.reset();
+        } else {
+          msg.innerHTML = '<span style="color:red">❌ ' + (res.error || 'Error al subir') + '</span>';
+        }
+      } catch (e) {
+        msg.innerHTML = '<span style="color:red">❌ Error de red</span>';
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Guardar Documento';
+    };
+
+    // --- LIST ---
+    async function loadList() {
+      const area = document.getElementById('list-area');
+      area.innerHTML = '<div style="text-align:center; padding:2rem"><div class="spinner"></div></div>';
+
+      try {
+        const req = await fetch(apiUrl + '&action=list&page=1&per_page=50');
+        const res = await req.json();
+        const list = res.data || [];
+
+        if (list.length === 0) {
+          area.innerHTML = '<div style="padding:2rem; text-align:center; color:gray">Aún no hay documentos.</div>';
+          return;
+        }
+
+        renderDocs(list, area);
+
+      } catch (e) {
+        area.innerHTML = 'Error al cargar lista.';
+      }
+    }
+
+    // --- RENDER UTILS ---
+    function renderDocs(list, container) {
+      container.innerHTML = list.map(doc => `
+            <div class="liquid-glass" style="display:flex; justify-content:space-between; align-items:center; padding:1rem">
                 <div>
-                   <div style="font-weight:700; color:var(--text-main); font-size:1.1rem">${d.name}</div>
-                   <div style="font-size:0.85rem; color:var(--text-muted);">${d.date} • ${d.path}</div>
+                    <div style="font-weight:700; font-size:1.1rem">${doc.name || 'Sin Título'}</div>
+                    <div style="color:var(--text-muted); font-size:0.9rem">
+                        ${doc.date} • ${doc.codes ? doc.codes.length + ' códigos' : ''}
+                    </div>
                 </div>
-                <div class="flex gap-2">
-                   <a href="uploads/${d.path}" target="_blank" class="btn btn--secondary" style="font-size:0.8rem; padding:0.5rem 1rem;">📄 Ver</a>
+                <div>
+                    <a href="uploads/${doc.path}" target="_blank" class="btn btn--secondary" style="text-decoration:none">📄 Ver PDF</a>
                 </div>
             </div>
         `).join('');
     }
 
-    // Adapted Search Function
-    window.doSearch = async () => {
-      const raw = document.getElementById('search-input').value.trim();
-      if (!raw) return;
-      const codes = [...new Set(raw.split(/\r?\n/).map(l => l.trim().split(/\s+/)[0]).filter(Boolean))];
-      const f = new FormData(); f.append('action', 'search'); f.append('codes', codes.join('\n'));
-
-      const area = document.getElementById('results-area');
-      area.innerHTML = '<div class="text-center"><div class="spinner"></div></div>';
-
-      const r = await fetch(apiUrl, { method: 'POST', body: f });
-      const data = await r.json();
-      area.innerHTML = '';
-      render(data, 'results-area', true);
-    };
-
-    // Upload & Extract Logic (Simplified for Debug)
-    // Kept the heavy extraction logic for now but wrapped ensuring elements verify existence
-    async function handleFileSelect(input) {
-      // Logic same as above, ensure IDs like 'extractionSettingsModal' exist
-    }
-    async function processImageWithOCR(file) { const worker = await Tesseract.createWorker('eng'); const ret = await worker.recognize(file); await worker.terminate(); return ret.data.text; }
-
-    async function processPdfText(file) { const ab = await file.arrayBuffer(); const pdf = await pdfjsLib.getDocument(ab).promise; let ft = ""; for (let i = 1; i <= pdf.numPages; i++) { const pg = await pdf.getPage(i); const tc = await pg.getTextContent(); let pt = "", ly = -1; for (const it of tc.items) { if (ly !== -1 && Math.abs(it.transform[5] - ly) > 10) pt += "\n"; else if (pt.length > 0 && !pt.endsWith("\n") && !pt.endsWith(" ") && it.str.trim().length > 0) { if (!it.str.startsWith(" ")) pt += " "; } pt += it.str; ly = it.transform[5]; } ft += pt + "\n"; } return ft; }
-
-    function runAdvancedExtraction(text, markers, stopChar, joinHyphens) { let pt = text; if (joinHyphens) pt = pt.replace(/-\s*[\r\n]+\s*/g, "-"); if (!stopChar) pt = pt.replace(/[\r\n]+/g, " "); const fc = [], lt = pt.toLowerCase(), dsc = [" ", "\t", "\n", ",", ";"]; if (stopChar) { dsc.length = 0; dsc.push(stopChar, "\n"); } let si = 0; while (si < pt.length) { let bsi = -1, btl = 0; for (const tk of markers) { const idx = lt.indexOf(tk.toLowerCase(), si); if (idx !== -1 && (bsi === -1 || idx < bsi)) { bsi = idx; btl = tk.length; } } if (bsi === -1) break; let cur = bsi + btl; while (cur < pt.length && /\s/.test(pt[cur])) cur++; const cs = cur; let ce = -1; for (let i = cs; i < pt.length; i++) { const ch = pt[i]; if (stopChar) { if (ch === stopChar || ch === '\n') { ce = i; break; } } else { if (dsc.includes(ch)) { ce = i; break; } } } if (ce === -1) ce = pt.length; if (ce > cs) { let rc = pt.substring(cs, ce).trim().replace(/[.,;]+$/, ""); if (rc.length > 1) fc.push(rc); si = ce; } else si = cur + 1; } return [...new Set(fc)]; }
-
-    function displayResults(codes) { const st = document.getElementById('auto-extract-status'), ca = document.getElementById('codes'), cl = document.getElementById('code-count'); if (codes.length > 0) { ca.value = codes.join('\n'); st.innerHTML = `<span style="color:var(--success)">✅ ${codes.length} códigos encontrados.</span>`; cl.innerText = `${codes.length} códigos`; document.getElementById('verify-warning').classList.remove('hidden'); document.getElementById('verify-warning').scrollIntoView({ behavior: 'smooth' }); } else { ca.value = ""; st.innerHTML = `<span style="color:var(--warning)">⚠️ No se encontraron códigos.</span>`; } }
+    // --- INIT ---
+    // NO contextmenu prevention to allow debugging!
+    // console.log("Debug mode enabled");
   </script>
 </body>
 
