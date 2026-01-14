@@ -22,7 +22,9 @@ RUN a2enmod rewrite
 COPY . /var/www/html/
 
 # 5. Permisos para uploads (Evita errores al subir archivos)
-RUN chown -R www-data:www-data /var/www/html \
+# 5. Permisos para uploads (Evita errores al subir archivos)
+RUN mkdir -p /var/www/html/uploads \
+    && chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html/uploads
 
 # 6. Arreglar MPM + Puerto de Railway al arrancar
