@@ -492,7 +492,6 @@
     .page-title {
       font-size: 1.25rem;
     }
-    }
 
     /* Z-INDEX FIX */
     #loginOverlay {
@@ -739,48 +738,42 @@
     // --- TABS ---
     // --- TABS ---
     function switchTab(tabName, navEl) {
-      // Update Desktop Nav
+      // 1. Update Desktop Nav (Sidebar)
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
 
-      // If triggered from desktop sidebar
       if (navEl) {
+        // Clicked on desktop
         navEl.classList.add('active');
       } else {
-        // If triggered from mobile or code, find desktop equivalent
+        // Triggered from mobile or code -> find desktop equivalent
+        const iconMap = { 'search': '🔍', 'code': '🔢', 'upload': '📤', 'list': '📋' };
+        const items = Array.from(document.querySelectorAll('.nav-item'));
+        const match = items.find(el => el.innerText.includes(iconMap[tabName]));
+        if (match) match.classList.add('active');
       }
 
-      // Update icon mapping for 4th tab
-      if (tabName === 'code' && !navEl) {
-        // Mobile/Desktop icon check
-      }
+      // 2. Update Mobile Nav (Bottom)
+      document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+      const mobileIconMap = { 'search': '🔍', 'code': '🔢', 'upload': '📤', 'list': '📋' };
+      const mobileItems = Array.from(document.querySelectorAll('.mobile-nav-item'));
+      const mobileMatch = mobileItems.find(el => el.innerText.includes(mobileIconMap[tabName]));
+      if (mobileMatch) mobileMatch.classList.add('active');
 
-      const iconMap = { 'search': '🔍', 'code': '🔢', 'upload': '📤', 'list': '📋' };
-      const items = Array.from(document.querySelectorAll('.nav-item'));
-      const match = items.find(el => el.innerText.includes(iconMap[tabName]));
-      if (match) match.classList.add('active');
-    }
+      // 3. Update Content Visibility
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById('tab-' + tabName).classList.remove('hidden');
 
-    // Update Mobile Nav
-    document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
-    const mobileIconMap = { 'search': '🔍', 'upload': '📤', 'list': '📋' };
-    const mobileItems = Array.from(document.querySelectorAll('.mobile-nav-item'));
-    const mobileMatch = mobileItems.find(el => el.innerText.includes(mobileIconMap[tabName]));
-    if (mobileMatch) mobileMatch.classList.add('active');
+      // 4. Update Header Title
+      const titles = {
+        search: 'Gestor Documental Corporativo',
+        code: 'Búsqueda por Código',
+        upload: 'Cargar Documento',
+        list: 'Listado Maestro'
+      };
+      document.getElementById('page-title').textContent = titles[tabName] || 'Gestor Documental Corporativo';
 
-    // Update Content
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.getElementById('tab-' + tabName).classList.remove('hidden');
-
-    // Update Title
-    const titles = {
-      search: 'Gestor Documental Corporativo',
-      code: 'Búsqueda por Código',
-      upload: 'Cargar Documento',
-      list: 'Listado Maestro'
-    };
-    document.getElementById('page-title').textContent = titles[tabName] || 'Gestor Documental Corporativo';
-
-    if (tabName === 'list') loadList();
+      // 5. Special Actions
+      if (tabName === 'list') loadList();
     }
 
     function updateMobileNav(el) {
@@ -973,22 +966,6 @@
     }
 
     // --- RENDER UTILS ---
-    function renderDocs(list, container) {
-      container.innerHTML = list.map(doc => `
-            <div class="liquid-glass" style="display:flex; justify-content:space-between; align-items:center; padding:1rem">
-                <div>
-                    <div style="font-weight:700; font-size:1.1rem">${doc.name || 'Sin Título'}</div>
-                    <div style="color:var(--text-muted); font-size:0.9rem">
-                        ${doc.date} • ${doc.codes ? doc.codes.length + ' códigos' : ''}
-                    </div>
-                </div>
-                <div>
-                    <a href="uploads/${doc.path}" target="_blank" class="btn btn--secondary" style="text-decoration:none">📄 Ver PDF</a>
-                </div>
-            </div>
-        `).join('');
-    }
-
     // --- INIT ---
     // NO contextmenu prevention to allow debugging!
     // console.log("Debug mode enabled");
