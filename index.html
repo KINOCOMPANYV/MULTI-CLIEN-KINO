@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MasterKino - Panel</title>
+
+  <!-- PDF.js Support -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <style>
+    /* VARIABLES GLOBALES */
+    :root {
+      /* Theme: Soft Indigo & Slate (Professional/Restful) */
+      --primary: #6366f1;
+      /* Indigo 500 */
+      --primary-dark: #4f46e5;
+      /* Indigo 600 */
+      --primary-light: #e0e7ff;
+      /* Indigo 100 */
+      --primary-soft: rgba(99, 102, 241, 0.1);
+
+      --accent: #8b5cf6;
+      /* Violet 500 */
+
+      --bg-body: #f8fafc;
+      /* Slate 50 */
+      --bg-card: rgba(255, 255, 255, 0.7);
+      /* Glass effect base */
+      --bg-sidebar: rgba(255, 255, 255, 0.8);
+
+      --text-main: #334155;
+      /* Slate 700 */
+      --text-bold: #1e293b;
+      /* Slate 800 */
+      --text-muted: #64748b;
+      /* Slate 500 */
+
+      --border-light: rgba(226, 232, 240, 0.6);
+      /* Slate 200 tailored */
+      --border-focus: var(--primary);
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+      --shadow-glow: 0 0 15px rgba(99, 102, 241, 0.15);
+
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --blur: blur(12px);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      background: var(--bg-body);
+      background-image:
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.05) 0px, transparent 50%);
+      color: var(--text-main);
+      display: flex;
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    /* SCROLLBAR */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 280px;
+      background: var(--bg-sidebar);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      border-right: 1px solid var(--border-light);
+      height: 100vh;
+      position: fixed;
+      left: 0;
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 2rem;
+      z-index: 50;
+      transition: transform 0.3s ease;
+    }
+
+    .logo-area {
+      margin-bottom: 3rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: -0.025em;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: white;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      box-shadow: var(--shadow-glow);
+    }
+
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .nav-item {
+      padding: 0.875rem 1.25rem;
+      border-radius: var(--radius-md);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: var(--transition);
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .nav-item:hover {
+      background: white;
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+      transform: translateX(4px);
+    }
+
+    .nav-item.active {
+      background: linear-gradient(90deg, var(--primary-light), transparent);
+      color: var(--primary-dark);
+      font-weight: 600;
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 10%;
+      bottom: 10%;
+      width: 4px;
+      background: var(--primary);
+      border-radius: 0 4px 4px 0;
+    }
+
+    /* MOBILE NAVIGATION (Bottom Bar) */
+    .mobile-nav {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border-light);
+      padding: 0.75rem;
+      z-index: 60;
+      justify-content: space-around;
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .mobile-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .mobile-nav-item.active {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .mobile-nav-item span {
+      font-size: 1.25rem;
+    }
+
+    /* MAIN CONTENT */
+    .main-wrapper {
+      margin-left: 280px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      padding-bottom: 80px;
+      /* Space for mobile nav */
+    }
+
+    .top-header {
+      height: 80px;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: var(--blur);
+      -webkit-backdrop-filter: var(--blur);
+      border-bottom: 1px solid var(--border-light);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 3rem;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+
+    .page-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-bold);
+      letter-spacing: -0.025em;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      background: white;
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    .content-area {
+      padding: 3rem;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* COMPONENTS */
+    .liquid-glass {
+      background: var(--bg-card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+      padding: 2rem;
+      margin-bottom: 2rem;
+      transition: var(--transition);
+    }
+
+    .liquid-glass:hover {
+      box-shadow: var(--shadow-glow), var(--shadow-lg);
+      transform: translateY(-2px);
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text-bold);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .section-title::before {
+      content: '';
+      display: block;
+      width: 6px;
+      height: 24px;
+      background: var(--primary);
+      border-radius: 4px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.75rem 1.5rem;
+      border-radius: var(--radius-md);
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: var(--transition);
+      gap: 0.5rem;
+      font-size: 0.95rem;
+      letter-spacing: 0.01em;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn--primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn--primary:hover {
+      background: var(--primary-dark);
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn--secondary {
+      background: white;
+      color: var(--text-main);
+      border: 1px solid var(--border-light);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn--secondary:hover {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border-color: var(--primary-light);
+    }
+
+    .btn--danger {
+      background: #fee2e2;
+      color: #dc2626;
+    }
+
+    .btn--danger:hover {
+      background: #fecaca;
+      color: #b91c1c;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      padding: 1rem;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      font-family: inherit;
+      margin-bottom: 1.25rem;
+      background: rgba(255, 255, 255, 0.8);
+      transition: var(--transition);
+      color: var(--text-main);
+    }
+
+    input:focus,
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+      background: white;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* UTILS */
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--primary-light);
+      border-left-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s cubic-bezier(0.55, 0.055, 0.675, 0.19) infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* TAGS */
+    .tag {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      background: var(--border-light);
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* RESPONSIVE DESIGN */
+    @media (max-width: 1024px) {
+      .content-area {
+        padding: 2rem;
+      }
+    }
+
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        display: none;
+        /* Hide standard sidebar */
+      }
+
+      .mobile-nav {
+        display: flex;
+        /* Show bottom nav */
+      }
+
+      .main-wrapper {
+        margin-left: 0;
+        margin-bottom: 60px;
+        /* Space for bottom nav */
+      }
+
+      .top-header {
+        padding: 0 1.5rem;
+        height: 64px;
+      }
+
+      .content-area {
+        padding: 1.5rem;
+      }
+
+      .liquid-glass {
+        padding: 1.5rem;
+      }
+
+      h1,
+      .page-title {
+        font-size: 1.25rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- LOGIN OVERLAY -->
+  <div id="loginOverlay" class="overlay">
+    <div class="liquid-glass" style="width: 350px; text-align:center;">
+      <h2 style="margin-bottom:1rem">🔐 Acceso</h2>
+      <input type="password" id="accessInput" placeholder="Contraseña de cliente" autofocus>
+      <button id="submitAccess" class="btn btn--primary" style="width:100%">Ingresar</button>
+      <p id="errorMsg" style="color:red; margin-top:1rem; font-size:0.9rem" class="hidden"></p>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo-area">
+      <div class="logo-icon">⚡</div>
+      <span>MasterKino</span>
+    </div>
+    <nav class="nav-menu">
+      <div class="nav-item active" onclick="switchTab('search', this)">
+        <span>🔍</span> Buscar
+      </div>
+      <div class="nav-item" onclick="switchTab('upload', this)">
+        <span>📤</span> Cargar
+      </div>
+      <div class="nav-item" onclick="switchTab('list', this)">
+        <span>📋</span> Listar
+      </div>
+    </nav>
+    <div style="margin-top:auto; padding-top:1rem; border-top:1px solid var(--border-light)">
+      <div class="nav-item" style="color:#ef4444" onclick="window.location.href='login.php?logout=1'">
+        <span>🚪</span> Salir
+      </div>
+    </div>
+  </aside>
+
+  <!-- MOBILE NAV (Bottom) -->
+  <nav class="mobile-nav">
+    <div class="mobile-nav-item active" onclick="switchTab('search', null); updateMobileNav(this)">
+      <span>🔍</span> Buscar
+    </div>
+    <div class="mobile-nav-item" onclick="switchTab('upload', null); updateMobileNav(this)">
+      <span>📤</span> Cargar
+    </div>
+    <div class="mobile-nav-item" onclick="switchTab('list', null); updateMobileNav(this)">
+      <span>📋</span> Listar
+    </div>
+    <div class="mobile-nav-item" onclick="window.location.href='login.php?logout=1'" style="color:#ef4444">
+      <span>🚪</span> Salir
+    </div>
+  </nav>
+
+  <!-- MAIN WRAPPER -->
+  <div class="main-wrapper">
+    <header class="top-header">
+      <h2 id="page-title" style="font-size:1.1rem; font-weight:600">Buscador</h2>
+      <div style="display:flex; align-items:center; gap:0.5rem">
+        <span style="font-size:0.9rem">Cliente</span>
+        <div style="width:32px; height:32px; background:#e5e7eb; border-radius:50%"></div>
+      </div>
+    </header>
+
+    <div class="content-area">
+
+      <!-- TAB SEARCH -->
+      <div id="tab-search" class="tab-content">
+        <div class="liquid-glass">
+          <h3 class="section-title">Búsqueda Rápida</h3>
+          <div style="display:flex; gap:0.5rem">
+            <input type="text" id="searchInput" placeholder="Ingresa códigos aquí..." style="margin-bottom:0">
+            <button class="btn btn--primary" onclick="doSearch()">Buscar</button>
+            <button class="btn btn--secondary" onclick="clearSearch()">Limpiar</button>
+          </div>
+          <div id="search-status" style="margin-top:1rem"></div>
+        </div>
+        <div id="results-area"></div>
+      </div>
+
+      <!-- TAB UPLOAD -->
+      <div id="tab-upload" class="tab-content hidden">
+        <div class="liquid-glass">
+          <h3 class="section-title">Subir Documento (PDF)</h3>
+          <form id="uploadForm">
+            <label>Nombre del Documento</label>
+            <input type="text" name="name" required>
+
+            <label>Fecha</label>
+            <input type="date" name="date" required>
+
+            <label>Archivo PDF</label>
+            <input type="file" name="file" accept=".pdf" required>
+
+            <label>Códigos (Opcional, separados por enter)</label>
+            <textarea name="codes" rows="5"></textarea>
+
+            <button type="submit" class="btn btn--primary" style="width:100%">Guardar Documento</button>
+          </form>
+          <div id="upload-msg" style="margin-top:1rem"></div>
+        </div>
+      </div>
+
+      <!-- TAB LIST -->
+      <div id="tab-list" class="tab-content hidden">
+        <div class="liquid-glass" style="display:flex; justify-content:space-between; align-items:center">
+          <h3 class="section-title" style="margin:0">Mis Documentos</h3>
+          <button class="btn btn--secondary" onclick="loadList()">🔄 Recargar</button>
+        </div>
+        <div id="list-area"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // --- CORE LOGIC ---
+    const params = new URLSearchParams(window.location.search);
+    const clientCode = params.get('c');
+    const apiUrl = 'api.php?c=' + encodeURIComponent(clientCode || '');
+
+    if (!clientCode) window.location.href = 'login.php';
+
+    // --- DYNAMIC THEME ---
+    async function loadTheme() {
+      try {
+        const req = await fetch(apiUrl + '&action=get_client_config');
+        const config = await req.json();
+
+        if (config) {
+          const root = document.documentElement;
+          if (config.color_primario) root.style.setProperty('--primary', config.color_primario);
+          if (config.color_primario) root.style.setProperty('--primary-dark', adjustColor(config.color_primario, -20));
+          if (config.color_primario) root.style.setProperty('--primary-light', adjustColor(config.color_primario, 140));
+
+          if (config.color_secundario) root.style.setProperty('--accent', config.color_secundario);
+
+          if (config.titulo_app) {
+            document.title = config.titulo_app;
+            const logoText = document.querySelector('.logo-area span');
+            if (logoText) logoText.textContent = config.titulo_app;
+          }
+        }
+      } catch (e) {
+        console.error("Theme load error", e);
+      }
+    }
+
+    // Simple util to darken/lighten hex color
+    function adjustColor(color, amount) {
+      return '#' + color.replace(/^#/, '').replace(/../g, color => ('0' + Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)).substr(-2));
+    }
+
+    // Init
+    loadTheme();
+
+    // --- TABS ---
+    // --- TABS ---
+    function switchTab(tabName, navEl) {
+      // Update Desktop Nav
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+      // If triggered from desktop sidebar
+      if (navEl) {
+        navEl.classList.add('active');
+      } else {
+        // If triggered from mobile or code, find desktop equivalent
+        const iconMap = { 'search': '🔍', 'upload': '📤', 'list': '📋' };
+        const items = Array.from(document.querySelectorAll('.nav-item'));
+        const match = items.find(el => el.innerText.includes(iconMap[tabName]));
+        if (match) match.classList.add('active');
+      }
+
+      // Update Mobile Nav
+      document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+      const mobileIconMap = { 'search': '🔍', 'upload': '📤', 'list': '📋' };
+      const mobileItems = Array.from(document.querySelectorAll('.mobile-nav-item'));
+      const mobileMatch = mobileItems.find(el => el.innerText.includes(mobileIconMap[tabName]));
+      if (mobileMatch) mobileMatch.classList.add('active');
+
+      // Update Content
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.getElementById('tab-' + tabName).classList.remove('hidden');
+
+      // Update Title
+      const titles = { search: 'Buscador', upload: 'Cargar PDF', list: 'Listado' };
+      document.getElementById('page-title').textContent = titles[tabName] || 'Panel';
+
+      if (tabName === 'list') loadList();
+    }
+
+    function updateMobileNav(el) {
+      // Handled centrally in switchTab now, but kept for direct onclick reference if needed
+    }
+
+    // --- LOGIN ---
+    document.getElementById('submitAccess').onclick = async () => {
+      const pass = document.getElementById('accessInput').value;
+      const msg = document.getElementById('errorMsg');
+      if (!pass) return;
+
+      try {
+        const fd = new FormData();
+        fd.append('action', 'login');
+        fd.append('password', pass);
+
+        const req = await fetch(apiUrl, { method: 'POST', body: fd });
+        const res = await req.json();
+
+        if (res.success) {
+          document.getElementById('loginOverlay').classList.add('hidden');
+        } else {
+          msg.textContent = 'Contraseña inválida';
+          msg.classList.remove('hidden');
+        }
+      } catch (e) {
+        msg.textContent = 'Error de conexión';
+        msg.classList.remove('hidden');
+      }
+    };
+
+    // --- SEARCH ---
+    async function doSearch() {
+      const val = document.getElementById('searchInput').value.trim();
+      const area = document.getElementById('results-area');
+      area.innerHTML = '<div style="text-align:center; padding:2rem"><div class="spinner"></div></div>';
+
+      if (!val) { area.innerHTML = ''; return; }
+
+      const codes = val.split(/[\n\r,]+/).map(c => c.trim()).filter(Boolean);
+
+      try {
+        const fd = new FormData();
+        fd.append('action', 'search');
+        fd.append('codes', codes.join('\\n')); // API expects newline separated
+
+        const req = await fetch(apiUrl, { method: 'POST', body: fd });
+        const res = await req.json();
+
+        if (!res || res.length === 0) {
+          area.innerHTML = '<div class="liquid-glass">No se encontraron documentos.</div>';
+          return;
+        }
+
+        renderDocs(res, area);
+
+      } catch (e) {
+        area.innerHTML = '<div style="color:red">Error en búsqueda: ' + e.message + '</div>';
+      }
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('results-area').innerHTML = '';
+    }
+
+    // --- UPLOAD ---
+    document.getElementById('uploadForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const form = e.target;
+      const btn = form.querySelector('button');
+      const msg = document.getElementById('upload-msg');
+
+      btn.disabled = true;
+      btn.textContent = 'Subiendo...';
+      msg.innerHTML = '';
+
+      try {
+        const fd = new FormData(form);
+        fd.append('action', 'upload');
+
+        const req = await fetch(apiUrl, { method: 'POST', body: fd });
+        const res = await req.json();
+
+        if (res.success || res.message) {
+          msg.innerHTML = '<span style="color:green">✅ ' + (res.message || 'Subido con éxito') + '</span>';
+          form.reset();
+        } else {
+          msg.innerHTML = '<span style="color:red">❌ ' + (res.error || 'Error al subir') + '</span>';
+        }
+      } catch (e) {
+        msg.innerHTML = '<span style="color:red">❌ Error de red</span>';
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Guardar Documento';
+    };
+
+    // --- LIST ---
+    async function loadList() {
+      const area = document.getElementById('list-area');
+      area.innerHTML = '<div style="text-align:center; padding:2rem"><div class="spinner"></div></div>';
+
+      try {
+        const req = await fetch(apiUrl + '&action=list&page=1&per_page=50');
+        const res = await req.json();
+        const list = res.data || [];
+
+        if (list.length === 0) {
+          area.innerHTML = '<div style="padding:2rem; text-align:center; color:gray">Aún no hay documentos.</div>';
+          return;
+        }
+
+        renderDocs(list, area);
+
+      } catch (e) {
+        area.innerHTML = 'Error al cargar lista.';
+      }
+    }
+
+    // --- RENDER UTILS ---
+    function renderDocs(list, container) {
+      container.innerHTML = list.map(doc => `
+            <div class="liquid-glass" style="display:flex; justify-content:space-between; align-items:center; padding:1rem">
+                <div>
+                    <div style="font-weight:700; font-size:1.1rem">${doc.name || 'Sin Título'}</div>
+                    <div style="color:var(--text-muted); font-size:0.9rem">
+                        ${doc.date} • ${doc.codes ? doc.codes.length + ' códigos' : ''}
+                    </div>
+                </div>
+                <div>
+                    <a href="uploads/${doc.path}" target="_blank" class="btn btn--secondary" style="text-decoration:none">📄 Ver PDF</a>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- INIT ---
+    // NO contextmenu prevention to allow debugging!
+    // console.log("Debug mode enabled");
+  </script>
+</body>
+
+</html>

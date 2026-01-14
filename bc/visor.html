@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visor de Documentos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+        }
+
+        .pdf-page-container {
+            position: relative;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e5e7eb;
+            display: inline-block;
+            background-color: white;
+        }
+
+        .textLayer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 1;
+            /* Opacidad total para que el verde se vea bien */
+            line-height: 1.0;
+            mix-blend-mode: multiply;
+            /* Mezcla mejor con el texto negro */
+        }
+
+        .textLayer>span {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            transform-origin: 0% 0%;
+        }
+
+        /* --- ESTILO VERDE --- */
+        .highlight {
+            background-color: #4ade80;
+            /* Verde brillante */
+            color: transparent;
+            border-radius: 2px;
+            outline: 2px solid #22c55e;
+            /* Borde más oscuro */
+            box-shadow: 0 0 5px rgba(34, 197, 94, 0.5);
+            z-index: 10;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #22c55e;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Debug / Rayos X */
+        .x-ray .textLayer>span {
+            background: rgba(255, 0, 0, 0.2);
+            outline: 1px solid red;
+            color: transparent;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 min-h-screen font-sans">
+
+    <div
+        class="fixed top-0 left-0 right-0 bg-white shadow-md z-50 px-4 py-3 flex flex-col sm:flex-row justify-between items-center border-b-4 border-green-500 gap-4">
+        <div>
+            <h1 class="font-bold text-gray-800 text-lg">Visor de Coincidencias</h1>
+            <p class="text-xs text-gray-500">Buscando: <span id="displayCode"
+                    class="font-mono bg-green-100 px-2 py-0.5 rounded text-green-800 font-bold border border-green-300">...</span>
+            </p>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <label class="flex items-center gap-2 cursor-pointer bg-gray-50 px-3 py-1 rounded border hover:bg-gray-100">
+                <input type="checkbox" id="toggleXray" class="w-4 h-4 text-green-600 rounded">
+                <span class="text-xs font-semibold text-gray-700">Modo Rayos X</span>
+            </label>
+            <button onclick="window.close()"
+                class="bg-gray-800 hover:bg-black text-white px-4 py-2 rounded text-sm font-medium transition">
+                Cerrar
+            </button>
+        </div>
+    </div>
+
+    <div id="resultsArea" class="mt-24 pb-12 flex flex-col items-center gap-8 min-h-[300px] px-4">
+        <div id="loadingState" class="text-center">
+            <div class="loader"></div>
+            <p class="text-gray-600 mt-2 font-medium">Analizando documento...</p>
+            <p id="progressText" class="text-sm text-gray-400">0%</p>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. Obtener datos de la URL automáticamente ---
+        const params = new URLSearchParams(window.location.search);
+        // Acepta 'file' o 'pdf' como parámetro para la url del archivo
+        const fileUrl = params.get('file') || params.get('pdf');
+        const rawCode = params.get('code') || '';
+        const searchCode = rawCode.trim();
+
+        // Mostrar código en el header
+        document.getElementById('displayCode').innerText = searchCode || "Todos";
+
+        // Toggle Rayos X
+        document.getElementById('toggleXray').addEventListener('change', (e) => {
+            if (e.target.checked) document.body.classList.add('x-ray');
+            else document.body.classList.remove('x-ray');
+        });
+
+        // --- 2. Lógica Principal (Basada en tu código funcional) ---
+        async function init() {
+            const resultsArea = document.getElementById('resultsArea');
+            const loadingState = document.getElementById('loadingState');
+            const progressText = document.getElementById('progressText');
+
+            if (!fileUrl) {
+                loadingState.innerHTML = `<div class="bg-red-100 text-red-700 p-4 rounded border border-red-300">❌ Error: No se especificó ningún archivo PDF.</div>`;
+                return;
+            }
+
+            try {
+                // Cargar PDF
+                const loadingTask = pdfjsLib.getDocument(fileUrl);
+                const pdf = await loadingTask.promise;
+                const numPages = pdf.numPages;
+
+                let matches = [];
+                // Normalizar búsqueda (quitar espacios y minúsculas)
+                const queryNormalized = searchCode.replace(/\s+/g, '').toLowerCase();
+
+                // Escanear páginas
+                for (let i = 1; i <= numPages; i++) {
+                    progressText.innerText = `Escaneando página ${i} de ${numPages}...`;
+
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+
+                    const pageStrings = textContent.items.map(item => item.str);
+                    const pageTextNorm = pageStrings.join('').replace(/\s+/g, '').toLowerCase();
+
+                    // Si hay coincidencia O si no se busca nada (mostrar todo)
+                    if (!searchCode || pageTextNorm.includes(queryNormalized)) {
+                        matches.push({ pageNumber: i, pageObj: page, textContent: textContent });
+                    }
+                }
+
+                // Renderizar
+                loadingState.style.display = 'none';
+
+                if (matches.length === 0) {
+                    resultsArea.innerHTML = `
+                        <div class="bg-white p-8 rounded-lg shadow text-center max-w-md">
+                            <div class="text-5xl mb-4">🤷‍♂️</div>
+                            <h3 class="text-xl font-bold text-gray-800">No se encontró "${searchCode}"</h3>
+                            <p class="text-gray-600 mt-2">El código no aparece como texto en este documento.</p>
+                            <div class="mt-4 text-sm text-yellow-600 bg-yellow-50 p-3 rounded">
+                                Nota: Si el código está en una imagen o sello, el sistema no podrá leerlo. Activa "Rayos X" para verificar.
+                            </div>
+                        </div>`;
+                } else {
+                    // Mostrar resumen
+                    const summary = document.createElement('div');
+                    summary.className = "bg-green-50 text-green-800 px-4 py-2 rounded-full text-sm font-bold border border-green-200 mb-4";
+                    summary.innerText = `✅ Encontrado en ${matches.length} página(s)`;
+                    resultsArea.appendChild(summary);
+
+                    // Renderizar cada página encontrada
+                    for (const match of matches) {
+                        await renderPage(match.pageObj, match.textContent, searchCode, match.pageNumber);
+                    }
+                }
+
+            } catch (error) {
+                console.error(error);
+                loadingState.innerHTML = `<div class="bg-red-100 text-red-700 p-4 rounded">Error al cargar PDF: ${error.message}</div>`;
+            }
+        }
+
+        async function renderPage(page, textContent, query, pageNum) {
+            const resultsArea = document.getElementById('resultsArea');
+            const viewport = page.getViewport({ scale: 1.5 }); // Escala original de tu código
+
+            // Tarjeta contenedora
+            const card = document.createElement('div');
+            card.className = "bg-white p-2 rounded-lg shadow-md border border-gray-200 inline-block";
+
+            // Header de página
+            const header = document.createElement('div');
+            header.className = "flex justify-between items-center mb-2 px-2";
+            header.innerHTML = `<span class="font-bold text-gray-700">Página ${pageNum}</span>`;
+            card.appendChild(header);
+
+            // Contenedor PDF
+            const container = document.createElement('div');
+            container.className = "pdf-page-container";
+            container.style.width = `${viewport.width}px`;
+            container.style.height = `${viewport.height}px`;
+
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            const textLayer = document.createElement('div');
+            textLayer.className = "textLayer";
+            textLayer.style.setProperty('--scale-factor', viewport.scale);
+
+            container.appendChild(canvas);
+            container.appendChild(textLayer);
+            card.appendChild(container);
+            resultsArea.appendChild(card);
+
+            // 1. Dibujar Canvas
+            await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+            // 2. Dibujar Capa de Texto
+            await pdfjsLib.renderTextLayer({
+                textContentSource: textContent,
+                container: textLayer,
+                viewport: viewport,
+                textDivs: []
+            }).promise;
+
+            // 3. Resaltar (Lógica flexible de tu código base)
+            if (query) {
+                const flexibleQuery = query.split('').map(c => c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\s*');
+                const regex = new RegExp(`(${flexibleQuery})`, 'gi');
+
+                textLayer.querySelectorAll('span').forEach(span => {
+                    if (regex.test(span.textContent)) {
+                        span.innerHTML = span.textContent.replace(regex, '<span class="highlight">$1</span>');
+                    }
+                });
+            }
+        }
+
+        // Iniciar automáticamente
+        init();
+    </script>
+</body>
+
+</html>

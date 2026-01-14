@@ -1,0 +1,372 @@
+<?php
+require __DIR__ . '/config.php';
+require __DIR__ . '/helpers/tenant.php';
+
+session_start();
+header('Content-Type: application/json');
+error_log('✅ [API] api.php iniciado');
+
+function json_exit($payload)
+{
+    echo json_encode($payload);
+    exit;
+}
+
+$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+$clienteRaw = $_GET['c']
+    ?? ($_SESSION['cliente']
+        ?? (basename(dirname($scriptName)) === 'clientes' ? basename(dirname(__DIR__)) : null));
+
+if ($clienteRaw === null) {
+    $scriptDir = trim(dirname($scriptName), '/');
+    $parts = $scriptDir !== '' ? explode('/', $scriptDir) : [];
+    $count = count($parts);
+    if ($count >= 2 && $parts[$count - 2] === 'clientes') {
+        $clienteRaw = $parts[$count - 1];
+    }
+}
+
+$cliente = sanitize_code($clienteRaw);
+if ($cliente === '') {
+    json_exit(['error' => 'Cliente no especificado o inválido']);
+}
+
+if (!ensure_active_client($db, $cliente)) {
+    json_exit(['error' => 'Cliente no encontrado o inactivo']);
+}
+
+error_log('✅ [API] Cliente validado: ' . $cliente);
+
+$_SESSION['cliente'] = $cliente;
+
+$tabla_docs = table_docs($cliente);
+$tabla_codes = table_codes($cliente);
+$tabla_docs_sql = "`{$tabla_docs}`";
+$tabla_codes_sql = "`{$tabla_codes}`";
+
+function ensure_upload_dir($cliente)
+{
+    // CORRECCIÓN: Kino usa la raíz de uploads
+    if ($cliente === 'kino') {
+        $dir = __DIR__ . '/uploads';
+    } else {
+        $dir = __DIR__ . '/uploads/' . $cliente;
+    }
+
+    if (!is_dir($dir)) {
+        if (!mkdir($dir, 0777, true) && !is_dir($dir)) {
+            throw new RuntimeException('No se pudo crear la carpeta de uploads');
+        }
+    }
+    return $dir;
+}
+
+function resolve_upload_path($cliente, $relativePath)
+{
+    $relativePath = ltrim($relativePath, '/');
+
+    // Si es Kino, buscar directamente en uploads/
+    if ($cliente === 'kino') {
+        return [__DIR__ . '/uploads/' . $relativePath, $relativePath];
+    }
+
+    // Para otros clientes, lógica normal
+    if (strpos($relativePath, '/') === false) {
+        $candidate = $cliente . '/' . $relativePath;
+        $full = __DIR__ . '/uploads/' . $candidate;
+        if (is_file($full)) {
+            return [$full, $candidate];
+        }
+        // Fallback por compatibilidad
+        $fullLegacy = __DIR__ . '/uploads/' . $relativePath;
+        return [$fullLegacy, $relativePath];
+    }
+    return [__DIR__ . '/uploads/' . $relativePath, $relativePath];
+}
+
+$action = $_REQUEST['action'] ?? '';
+
+try {
+    switch ($action) {
+        case 'get_client_config':
+            // Agregamos titulo_app al SELECT
+            $stmt = $db->prepare("SELECT color_primario, color_secundario, titulo_app FROM _control_clientes WHERE codigo = ?");
+            $stmt->execute([$cliente]);
+            $config = $stmt->fetch(PDO::FETCH_ASSOC);
+            json_exit($config ?: [
+                'color_primario' => '#2563eb',
+                'color_secundario' => '#F87171',
+                'titulo_app' => 'KINO COMPANY SAS V1' // Default
+            ]);
+
+        // Validar Contraseña de Acceso (Login)
+        case 'login':
+            $pass = $_POST['password'] ?? '';
+            $stmt = $db->prepare("SELECT password_hash FROM _control_clientes WHERE codigo = ?");
+            $stmt->execute([$cliente]);
+            $hash = $stmt->fetchColumn();
+
+            if ($hash && password_verify($pass, $hash)) {
+                json_exit(['success' => true]);
+            } else {
+                json_exit(['error' => 'Contraseña incorrecta']);
+            }
+            break;
+
+        // Validar Clave de Borrado
+        case 'verify_delete_key':
+            $key = $_POST['key'] ?? '';
+            $stmt = $db->prepare("SELECT clave_borrado FROM _control_clientes WHERE codigo = ?");
+            $stmt->execute([$cliente]);
+            $realKey = $stmt->fetchColumn();
+
+            // Compara texto plano (puedes usar hash si prefieres mayor seguridad)
+            if ($realKey === $key) {
+                json_exit(['success' => true]);
+            } else {
+                json_exit(['error' => 'Clave de borrado incorrecta']);
+            }
+            break;
+
+        case 'suggest':
+            $term = trim($_GET['term'] ?? '');
+            if ($term === '') {
+                json_exit([]);
+            }
+            $stmt = $db->prepare("SELECT DISTINCT code FROM {$tabla_codes_sql} WHERE code LIKE ? ORDER BY code ASC LIMIT 10");
+            $stmt->execute([$term . '%']);
+            json_exit($stmt->fetchAll(PDO::FETCH_COLUMN));
+
+        case 'upload':
+            $name = $_POST['name'] ?? '';
+            $date = $_POST['date'] ?? '';
+            $codes = array_filter(array_map('trim', preg_split('/\r?\n/', $_POST['codes'] ?? '')));
+            if (empty($_FILES['file']['tmp_name'])) {
+                json_exit(['error' => 'Archivo no recibido']);
+            }
+            $uploadsDir = ensure_upload_dir($cliente);
+            $filename = time() . '_' . basename($_FILES['file']['name']);
+            $target = $uploadsDir . '/' . $filename;
+            if (!move_uploaded_file($_FILES['file']['tmp_name'], $target)) {
+                json_exit(['error' => 'No se pudo subir el PDF']);
+            }
+            $path = $cliente . '/' . $filename;
+
+            $stmt = $db->prepare("INSERT INTO {$tabla_docs_sql} (name,date,path) VALUES (?,?,?)");
+            $stmt->execute([$name, $date, $path]);
+            $docId = $db->lastInsertId();
+
+            if ($codes) {
+                $ins = $db->prepare("INSERT INTO {$tabla_codes_sql} (document_id,code) VALUES (?,?)");
+                foreach (array_unique($codes) as $c) {
+                    $ins->execute([$docId, $c]);
+                }
+            }
+            json_exit(['message' => 'Documento guardado']);
+
+        case 'list':
+            $page = max(1, (int) ($_GET['page'] ?? 1));
+            $perPage = isset($_GET['per_page']) ? (int) $_GET['per_page'] : 50;
+            $total = (int) $db->query("SELECT COUNT(*) FROM {$tabla_docs_sql}")->fetchColumn();
+
+            if ($perPage === 0) {
+                $stmt = $db->query("SELECT d.id,d.name,d.date,d.path, GROUP_CONCAT(c.code SEPARATOR '\n') AS codes FROM {$tabla_docs_sql} d LEFT JOIN {$tabla_codes_sql} c ON d.id=c.document_id GROUP BY d.id ORDER BY d.date DESC");
+                $rows = $stmt->fetchAll();
+                $lastPage = 1;
+                $page = 1;
+            } else {
+                $perPage = max(1, min(50, $perPage));
+                $offset = ($page - 1) * $perPage;
+                $lastPage = (int) ceil($total / $perPage);
+
+                $stmt = $db->prepare("SELECT d.id,d.name,d.date,d.path, GROUP_CONCAT(c.code SEPARATOR '\n') AS codes FROM {$tabla_docs_sql} d LEFT JOIN {$tabla_codes_sql} c ON d.id=c.document_id GROUP BY d.id ORDER BY d.date DESC LIMIT :l OFFSET :o");
+                $stmt->bindValue(':l', $perPage, PDO::PARAM_INT);
+                $stmt->bindValue(':o', $offset, PDO::PARAM_INT);
+                $stmt->execute();
+                $rows = $stmt->fetchAll();
+            }
+
+            $docs = array_map(function ($r) {
+                return [
+                    'id' => (int) $r['id'],
+                    'name' => $r['name'],
+                    'date' => $r['date'],
+                    'path' => $r['path'],
+                    'codes' => $r['codes'] ? explode("\n", $r['codes']) : [],
+                ];
+            }, $rows);
+
+            json_exit([
+                'total' => $total,
+                'page' => $page,
+                'per_page' => $perPage,
+                'last_page' => $lastPage,
+                'data' => $docs,
+            ]);
+
+        case 'search':
+            $codes = array_filter(array_map('trim', preg_split('/\r?\n/', $_POST['codes'] ?? '')));
+            if (empty($codes)) {
+                json_exit([]);
+            }
+            $cond = implode(' OR ', array_fill(0, count($codes), 'UPPER(c.code) = UPPER(?)'));
+            $stmt = $db->prepare("SELECT d.id,d.name,d.date,d.path,c.code FROM {$tabla_docs_sql} d JOIN {$tabla_codes_sql} c ON d.id=c.document_id WHERE {$cond}");
+            $stmt->execute($codes);
+            $rows = $stmt->fetchAll();
+
+            $docs = [];
+            foreach ($rows as $r) {
+                $id = (int) $r['id'];
+                if (!isset($docs[$id])) {
+                    $docs[$id] = [
+                        'id' => $id,
+                        'name' => $r['name'],
+                        'date' => $r['date'],
+                        'path' => $r['path'],
+                        'codes' => [],
+                    ];
+                }
+                if (!in_array($r['code'], $docs[$id]['codes'], true)) {
+                    $docs[$id]['codes'][] = $r['code'];
+                }
+            }
+
+            $remaining = $codes;
+            $selected = [];
+            while ($remaining) {
+                $best = null;
+                $bestCover = [];
+                foreach ($docs as $d) {
+                    $cover = array_intersect($d['codes'], $remaining);
+                    if (!$best || count($cover) > count($bestCover) || (count($cover) === count($bestCover) && $d['date'] > $best['date'])) {
+                        $best = $d;
+                        $bestCover = $cover;
+                    }
+                }
+                if (!$best || empty($bestCover)) {
+                    break;
+                }
+                $selected[] = $best;
+                $remaining = array_diff($remaining, $bestCover);
+                unset($docs[$best['id']]);
+            }
+
+            json_exit(array_values($selected));
+
+        case 'download_pdfs':
+            $uploadsDir = ensure_upload_dir($cliente);
+            if (!class_exists('ZipArchive')) {
+                json_exit(['error' => 'Extensión ZipArchive no disponible']);
+            }
+
+            header('Content-Type: application/zip');
+            header('Content-Disposition: attachment; filename="uploads_' . date('Ymd_His') . '.zip"');
+
+            $tmpFile = tempnam(sys_get_temp_dir(), 'zip');
+            $zip = new ZipArchive();
+            if ($zip->open($tmpFile, ZipArchive::CREATE) !== true) {
+                json_exit(['error' => 'No se pudo crear el ZIP']);
+            }
+
+            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($uploadsDir, FilesystemIterator::SKIP_DOTS));
+            foreach ($files as $file) {
+                if ($file->isDir()) {
+                    continue;
+                }
+                $filePath = $file->getRealPath();
+                $relativePath = $cliente . '/' . substr($filePath, strlen($uploadsDir) + 1);
+                $zip->addFile($filePath, $relativePath);
+            }
+            $zip->close();
+
+            readfile($tmpFile);
+            unlink($tmpFile);
+            exit;
+
+        case 'edit':
+            $id = (int) ($_POST['id'] ?? 0);
+            $name = $_POST['name'] ?? '';
+            $date = $_POST['date'] ?? '';
+            $codes = array_filter(array_map('trim', preg_split('/\r?\n/', $_POST['codes'] ?? '')));
+            if (!$id || !$name || !$date) {
+                json_exit(['error' => 'Faltan campos obligatorios']);
+            }
+
+            if (!empty($_FILES['file']['tmp_name'])) {
+                $old = $db->prepare("SELECT path FROM {$tabla_docs_sql} WHERE id=?");
+                $old->execute([$id]);
+                $oldPath = $old->fetchColumn();
+                if ($oldPath) {
+                    [$fullOld,] = resolve_upload_path($cliente, $oldPath);
+                    if (is_file($fullOld)) {
+                        @unlink($fullOld);
+                    }
+                }
+                $uploadsDir = ensure_upload_dir($cliente);
+                $fn = time() . '_' . basename($_FILES['file']['name']);
+                $target = $uploadsDir . '/' . $fn;
+                move_uploaded_file($_FILES['file']['tmp_name'], $target);
+                $path = $cliente . '/' . $fn;
+                $db->prepare("UPDATE {$tabla_docs_sql} SET name=?,date=?,path=? WHERE id=?")->execute([$name, $date, $path, $id]);
+            } else {
+                $db->prepare("UPDATE {$tabla_docs_sql} SET name=?,date=? WHERE id=?")->execute([$name, $date, $id]);
+            }
+
+            $db->prepare("DELETE FROM {$tabla_codes_sql} WHERE document_id=?")->execute([$id]);
+            if ($codes) {
+                $ins = $db->prepare("INSERT INTO {$tabla_codes_sql} (document_id,code) VALUES (?,?)");
+                foreach (array_unique($codes) as $c) {
+                    $ins->execute([$id, $c]);
+                }
+            }
+            json_exit(['message' => 'Documento actualizado']);
+
+        case 'delete':
+            $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
+            if (!$id) {
+                json_exit(['error' => 'ID inválido']);
+            }
+            $old = $db->prepare("SELECT path FROM {$tabla_docs_sql} WHERE id=?");
+            $old->execute([$id]);
+            $oldPath = $old->fetchColumn();
+            if ($oldPath) {
+                [$fullOld,] = resolve_upload_path($cliente, $oldPath);
+                if (is_file($fullOld)) {
+                    @unlink($fullOld);
+                }
+            }
+            $db->prepare("DELETE FROM {$tabla_codes_sql} WHERE document_id=?")->execute([$id]);
+            $db->prepare("DELETE FROM {$tabla_docs_sql} WHERE id=?")->execute([$id]);
+            json_exit(['message' => 'Documento eliminado']);
+
+        case 'search_by_code':
+            $code = trim($_POST['code'] ?? $_GET['code'] ?? '');
+            if ($code === '') {
+                json_exit([]);
+            }
+            $stmt = $db->prepare("SELECT d.id, d.name, d.date, d.path, GROUP_CONCAT(c2.code SEPARATOR '\n') AS codes FROM {$tabla_docs_sql} d JOIN {$tabla_codes_sql} c1 ON d.id = c1.document_id LEFT JOIN {$tabla_codes_sql} c2 ON d.id = c2.document_id WHERE UPPER(c1.code) = UPPER(?) GROUP BY d.id");
+            $stmt->execute([$code]);
+            $rows = $stmt->fetchAll();
+
+            $docs = array_map(function ($r) {
+                return [
+                    'id' => (int) $r['id'],
+                    'name' => $r['name'],
+                    'date' => $r['date'],
+                    'path' => $r['path'],
+                    'codes' => $r['codes'] ? explode("\n", $r['codes']) : [],
+                ];
+            }, $rows);
+
+            json_exit($docs);
+
+        default:
+            json_exit(['error' => 'Acción inválida']);
+    }
+} catch (PDOException $e) {
+    error_log('❌ [API] Error DB: ' . $e->getMessage());
+    echo '<!-- DB ERROR -->';
+    json_exit(['error' => $e->getMessage()]);
+} catch (Exception $e) {
+    json_exit(['error' => $e->getMessage()]);
+}

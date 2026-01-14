@@ -1,0 +1,5 @@
+/data/documents.db
+/uploads/
+/clientes/*/uploads/
+/clientes/*/data/
+!/uploads/.gitignore
