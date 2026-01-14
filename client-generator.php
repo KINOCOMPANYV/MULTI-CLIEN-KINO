@@ -278,7 +278,7 @@ try {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Panel de Gestión de Clientes</title>
+    <title>Gestor de clientes de APP KINO</title>
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
@@ -611,7 +611,7 @@ try {
     <div class="container">
         <!-- Crear Cliente -->
         <div class="card">
-            <h2>🏢 Crear Nuevo Cliente</h2>
+            <h2>Gestor de clientes de APP KINO</h2>
             <?php if ($ok): ?>
                 <div class="ok"><?= $ok ?></div><?php endif; ?>
             <?php if ($err): ?>
